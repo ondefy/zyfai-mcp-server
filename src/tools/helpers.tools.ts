@@ -30,7 +30,7 @@ export function registerHelperTools(
           try {
             portfolio = await zyfiApi.getPortfolio(userAddress);
           } catch (err) {
-            console.log("No existing portfolio found, user is new");
+            console.error("No existing portfolio found, user is new");
           }
         }
 

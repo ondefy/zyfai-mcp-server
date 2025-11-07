@@ -36,7 +36,7 @@ export class ZyFAIApiService {
     // Request interceptor for logging
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        console.log(
+        console.error(
           `[ZyFAI API] ${config.method?.toUpperCase()} ${config.url}`
         );
         return config;
