@@ -74,41 +74,21 @@ export function setupRoutes(server: McpServer) {
   router.get("/sse", async (req: Request, res: Response) => {
     console.log(`[SSE] New connection request`);
 
-    try {
-      // Create transport - SDK handles headers and endpoint event automatically
-      // This is the correct way per the SDK documentation
-      const transport = new SSEServerTransport("/messages", res);
-      const sessionId = transport.sessionId;
+    const transport = new SSEServerTransport("/messages", res);
+    const sessionId = transport.sessionId;
 
-      console.log(`[SSE] Session created: ${sessionId}`);
+    console.log(`[SSE] Session created: ${sessionId}`);
 
-      // Store transport immediately (before connect)
-      transports.set(sessionId, transport);
+    transports.set(sessionId, transport);
 
-      // Set up cleanup on disconnect
-      res.on("close", () => {
-        console.log(`[SSE] Connection closed: ${sessionId}`);
-        transports.delete(sessionId);
-      });
+    res.on("close", () => {
+      console.log(`[SSE] Connection closed: ${sessionId}`);
+      transports.delete(sessionId);
+    });
 
-      // Connect server to transport
-      // This automatically calls transport.start() which:
-      // 1. Sets SSE headers
-      // 2. Sends endpoint event with sessionId
-      // 3. Sets up the connection
-      await server.connect(transport);
+    await server.connect(transport);
 
-      console.log(`[SSE] Transport connected: ${sessionId}`);
-    } catch (error) {
-      console.error(`[SSE] Connection error:`, error);
-
-      if (!res.headersSent) {
-        res.status(500).json({
-          error: "Internal server error",
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
-    }
+    console.log(`[SSE] Transport connected: ${sessionId}`);
   });
 
   // ============================================================================
