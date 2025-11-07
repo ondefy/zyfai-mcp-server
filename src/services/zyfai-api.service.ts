@@ -6,16 +6,14 @@
 import axios, {
   AxiosInstance,
   AxiosError,
-  InternalAxiosRequestConfig,
-  AxiosResponse,
+  type InternalAxiosRequestConfig,
+  type AxiosResponse,
 } from "axios";
-import type {
-  ApiResponse,
-  ApiError,
-  PortfolioSummary,
-  OpportunitiesResponse,
-  RebalanceInfo,
-} from "../types/zyfai-api.types.js";
+import type { ApiResponse, ApiError } from "../types/zyfai-api.types.js";
+import type { PortfolioSummary } from "../types/zyfai-api.types.js";
+import type { OpportunitiesResponse } from "../types/zyfai-api.types.js";
+import type { RebalanceInfo } from "../types/zyfai-api.types.js";
+import { config } from "../config/env.js";
 
 export class ZyFAIApiService {
   private client: AxiosInstance;
@@ -23,8 +21,8 @@ export class ZyFAIApiService {
   private readonly apiKey?: string;
 
   constructor() {
-    this.baseURL = process.env.ZYFAI_API_URL || "https://defiapi.zyf.ai";
-    this.apiKey = process.env.ZYFAI_API_KEY;
+    this.baseURL = config.zyfiApiUrl;
+    this.apiKey = config.zyfiApiKey;
 
     this.client = axios.create({
       baseURL: this.baseURL,
