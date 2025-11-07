@@ -206,9 +206,9 @@ export function setupRoutes(server: McpServer) {
         });
       }
 
-      // The transport handles the message internally via the SDK
-      // We just need to acknowledge receipt
-      res.status(200).json({ status: "received" });
+      // CRITICAL FIX: Forward the message to the transport
+      // This is what actually processes the JSON-RPC message
+      await transport.handlePostMessage(req, res, req.body);
     } catch (error) {
       console.error(`[Messages] Error for session ${sessionId}:`, error);
 
