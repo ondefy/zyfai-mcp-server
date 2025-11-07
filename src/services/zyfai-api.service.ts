@@ -3,7 +3,12 @@
  * Wrapper service for calling ZyFAI DeFi API endpoints
  */
 
-import axios, { AxiosInstance, AxiosError } from "axios";
+import axios, {
+  AxiosInstance,
+  AxiosError,
+  InternalAxiosRequestConfig,
+  AxiosResponse,
+} from "axios";
 import type {
   ApiResponse,
   ApiError,
@@ -32,13 +37,13 @@ export class ZyFAIApiService {
 
     // Request interceptor for logging
     this.client.interceptors.request.use(
-      (config) => {
+      (config: InternalAxiosRequestConfig) => {
         console.log(
           `[ZyFAI API] ${config.method?.toUpperCase()} ${config.url}`
         );
         return config;
       },
-      (error) => {
+      (error: AxiosError) => {
         console.error("[ZyFAI API] Request error:", error);
         return Promise.reject(error);
       }
@@ -46,7 +51,7 @@ export class ZyFAIApiService {
 
     // Response interceptor for error handling
     this.client.interceptors.response.use(
-      (response) => response,
+      (response: AxiosResponse) => response,
       (error: AxiosError) => {
         const apiError: ApiError = {
           code: error.code || "UNKNOWN_ERROR",
