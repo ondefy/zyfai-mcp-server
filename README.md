@@ -23,7 +23,7 @@ A production-ready Model Context Protocol (MCP) server that exposes ZyFAI DeFi A
 ## Project Structure
 
 ```
-mcp-server-template/
+zyfai-sdk-mcp/
 ├── index.ts                              # Main server with 15 MCP tools
 ├── src/
 │   ├── services/

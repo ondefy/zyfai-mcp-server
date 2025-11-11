@@ -59,7 +59,6 @@ export function setupRoutes(server: McpServer) {
         ],
         totalTools: 18,
       },
-      documentation: "https://github.com/your-repo/mcp-server-template",
     });
   });
 

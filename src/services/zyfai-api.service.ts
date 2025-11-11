@@ -348,24 +348,6 @@ export class ZyFAIApiService {
   }
 
   /**
-   * Get Morpho average APYs
-   */
-  async getMorphoAverageApys(chainId: number): Promise<ApiResponse<unknown>> {
-    try {
-      const response = await this.client.get("/api/v2/morpho/average-apys", {
-        params: { chain_id: chainId },
-      });
-      return {
-        success: true,
-        data: response.data,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      throw this.handleError(error);
-    }
-  }
-
-  /**
    * Generic error handler
    */
   private handleError(error: unknown): ApiError {
