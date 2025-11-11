@@ -6,6 +6,7 @@
 import { Router, Request, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { x402PaymentMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
@@ -96,44 +97,49 @@ export function setupRoutes(server: McpServer) {
 
   /**
    * POST /messages - Receives messages for a session
+   * x402 payment middleware applied here to intercept tool calls
    */
-  router.post("/messages", async (req: Request, res: Response) => {
-    const sessionId = req.query.sessionId as string;
+  router.post(
+    "/messages",
+    x402PaymentMiddleware,
+    async (req: Request, res: Response) => {
+      const sessionId = req.query.sessionId as string;
 
-    if (!sessionId) {
-      return res.status(400).json({
-        error: "Missing sessionId",
-        message: "sessionId query parameter is required",
-      });
-    }
-
-    console.log(`[Messages] Received for session: ${sessionId}`);
-
-    // Get transport
-    const transport = transports.get(sessionId);
-
-    if (!transport) {
-      console.error(`[Messages] Session not found: ${sessionId}`);
-      return res.status(404).json({
-        error: "Session not found",
-        message: `No active session found for ID: ${sessionId}`,
-      });
-    }
-
-    // Forward the message to the transport for processing
-    try {
-      await transport.handlePostMessage(req, res, req.body);
-    } catch (error) {
-      console.error(`[Messages] Error for session ${sessionId}:`, error);
-
-      if (!res.headersSent) {
-        res.status(500).json({
-          error: "Internal server error",
-          message: error instanceof Error ? error.message : "Unknown error",
+      if (!sessionId) {
+        return res.status(400).json({
+          error: "Missing sessionId",
+          message: "sessionId query parameter is required",
         });
       }
+
+      console.log(`[Messages] Received for session: ${sessionId}`);
+
+      // Get transport
+      const transport = transports.get(sessionId);
+
+      if (!transport) {
+        console.error(`[Messages] Session not found: ${sessionId}`);
+        return res.status(404).json({
+          error: "Session not found",
+          message: `No active session found for ID: ${sessionId}`,
+        });
+      }
+
+      // Forward the message to the transport for processing
+      try {
+        await transport.handlePostMessage(req, res, req.body);
+      } catch (error) {
+        console.error(`[Messages] Error for session ${sessionId}:`, error);
+
+        if (!res.headersSent) {
+          res.status(500).json({
+            error: "Internal server error",
+            message: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      }
     }
-  });
+  );
 
   /**
    * DELETE /messages - Cleanup session

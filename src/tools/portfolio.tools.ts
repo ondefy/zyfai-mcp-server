@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyFAIApiService } from "../services/zyfai-api.service.js";
+import { x402ToolWrapper } from "./x402-tools.wrapper.js";
 
 export function registerPortfolioTools(
   server: McpServer,
@@ -45,15 +46,10 @@ export function registerPortfolioTools(
     }
   );
 
-  server.tool(
+  // Register multichain portfolio with x402 payment (1 USDC)
+  const multichainHandler = x402ToolWrapper.wrapToolHandler(
     "get-multichain-portfolio",
-    "Get multi-chain portfolio information for a wallet across all supported chains",
-    {
-      walletAddress: z
-        .string()
-        .describe("The wallet address to fetch multi-chain portfolio for"),
-    },
-    async ({ walletAddress }) => {
+    async ({ walletAddress }: { walletAddress: string }) => {
       try {
         const response = await zyfiApi.getMultiChainPortfolio(walletAddress);
         return {
@@ -79,5 +75,15 @@ export function registerPortfolioTools(
       }
     }
   );
-}
 
+  server.tool(
+    "get-multichain-portfolio",
+    "Get multi-chain portfolio information for a wallet across all supported chains. [PAID: 1 USDC]",
+    {
+      walletAddress: z
+        .string()
+        .describe("The wallet address to fetch multi-chain portfolio for"),
+    },
+    multichainHandler as any
+  );
+}

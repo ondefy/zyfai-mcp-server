@@ -14,11 +14,41 @@ A production-ready Model Context Protocol (MCP) server that exposes ZyFAI DeFi A
 - ✅ **Rebalancing** - Automated optimization recommendations
 - ✅ **Safe7579 Integration** - Smart contract wallet support
 - ✅ **ERC-8004 Session Keys** - Automated operations
+- ✅ **x402 Payment Integration** - Monetize premium endpoints with crypto payments
 - ✅ HTTP/SSE transport for web-accessible endpoints
 - ✅ Express.js server with CORS support
 - ✅ Production-ready with PM2 process management
 - ✅ Comprehensive error handling & TypeScript
 - ✅ Built with [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
+
+## 💰 x402 Payment Integration (NEW!)
+
+This server now supports **x402 protocol** for monetizing premium endpoints with crypto micropayments:
+
+### Premium Endpoints (Paid with USDC)
+
+- `get-multichain-portfolio` - **1.0 USDC** - Complete multi-chain portfolio data
+- `get-best-positions` - **0.75 USDC** - AI-powered position recommendations
+- `get-user-earnings` - **0.5 USDC** - Detailed earnings history
+
+### Quick Setup
+
+1. **Enable x402**: Set `X402_ENABLED=true` in your `.env`
+2. **Choose Facilitator**: Use public facilitator (no hosting needed!)
+   - Recommended: `https://facilitator.x402.rs`
+   - Supports: Base, Solana, Avalanche, Polygon, Sei, XDC
+3. **Set Receiver**: Add your wallet address to `X402_RECEIVER_ADDRESS`
+4. **No API Keys**: Public facilitators are free and gasless
+
+📖 **[Full x402 Integration Guide →](./X402_INTEGRATION.md)**
+
+### Benefits
+
+- ✨ **No Facilitator Hosting Required** - Use free public services
+- 💰 **Instant Payments** - USDC sent directly to your wallet
+- ⛽ **Gasless** - Facilitator covers gas fees
+- 🌐 **Multi-Chain** - Base, Solana, Avalanche, and more
+- 🔒 **Secure** - Payment verification before execution
 
 ## Project Structure
 

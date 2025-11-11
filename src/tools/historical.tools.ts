@@ -51,39 +51,4 @@ export function registerHistoricalTools(
       }
     }
   );
-
-  server.tool(
-    "get-morpho-average-apys",
-    "Get average APYs for Morpho protocol on a specific chain",
-    {
-      chainId: z
-        .number()
-        .describe("Chain ID (e.g., 8453 for Base, 42161 for Arbitrum)"),
-    },
-    async ({ chainId }) => {
-      try {
-        const response = await zyfiApi.getMorphoAverageApys(chainId);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching Morpho average APYs: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
 }
