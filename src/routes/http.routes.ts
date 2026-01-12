@@ -27,12 +27,11 @@ export function setupRoutes(server: McpServer) {
       protocol: "HTTP+SSE (optimized)",
       tools: {
         portfolio: 2,
-        opportunities: 4,
-        rebalancing: 5,
-        analytics: 3,
-        historical: 2,
-        helpers: 2,
-        total: 18,
+        opportunities: 3,
+        analytics: 8,
+        historical: 3,
+        helpers: 1,
+        total: 17,
       },
     });
   });
@@ -53,12 +52,11 @@ export function setupRoutes(server: McpServer) {
         categories: [
           "Portfolio & Position Management",
           "Opportunities Discovery",
-          "Rebalancing",
           "Analytics & Metrics",
           "Historical Data",
           "User Flow Helpers",
         ],
-        totalTools: 18,
+        totalTools: 17,
       },
     });
   });

@@ -13,7 +13,6 @@ export const config = {
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") || ["*"],
 
   // ZyFAI API configuration
-  zyfiApiUrl: process.env.ZYFAI_API_URL || "https://defiapi.zyf.ai",
   zyfiApiKey: process.env.ZYFAI_API_KEY,
 
   // x402 Payment configuration

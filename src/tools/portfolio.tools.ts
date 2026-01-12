@@ -5,23 +5,22 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyFAIApiService } from "../services/zyfai-api.service.js";
-import { x402ToolWrapper } from "./x402-tools.wrapper.js";
 
 export function registerPortfolioTools(
   server: McpServer,
   zyfiApi: ZyFAIApiService
 ) {
   server.tool(
-    "get-portfolio",
-    "Get complete portfolio information for a wallet address including all positions and total value",
+    "get-debank-portfolio",
+    "Get multi-chain portfolio information for a wallet across all supported chains using Debank",
     {
       walletAddress: z
         .string()
-        .describe("The wallet address to fetch portfolio for (0x...)"),
+        .describe("The wallet address to fetch multi-chain portfolio for"),
     },
     async ({ walletAddress }) => {
       try {
-        const response = await zyfiApi.getPortfolio(walletAddress);
+        const response = await zyfiApi.getDebankPortfolio(walletAddress);
         return {
           content: [
             {
@@ -35,37 +34,7 @@ export function registerPortfolioTools(
           content: [
             {
               type: "text",
-              text: `Error fetching portfolio: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // Register multichain portfolio with x402 payment (1 USDC)
-  const multichainHandler = x402ToolWrapper.wrapToolHandler(
-    "get-multichain-portfolio",
-    async ({ walletAddress }: { walletAddress: string }) => {
-      try {
-        const response = await zyfiApi.getMultiChainPortfolio(walletAddress);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching multi-chain portfolio: ${
+              text: `Error fetching Debank portfolio: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },
@@ -77,13 +46,41 @@ export function registerPortfolioTools(
   );
 
   server.tool(
-    "get-multichain-portfolio",
-    "Get multi-chain portfolio information for a wallet across all supported chains. [PAID: 1 USDC]",
+    "get-positions",
+    "Get all active DeFi positions for a user's wallet address",
     {
-      walletAddress: z
+      userAddress: z
         .string()
-        .describe("The wallet address to fetch multi-chain portfolio for"),
+        .describe("The user's EOA address to get positions for"),
+      chainId: z
+        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
+        .optional()
+        .describe("Optional chain ID to filter positions (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
     },
-    multichainHandler as any
+    async ({ userAddress, chainId }) => {
+      try {
+        const response = await zyfiApi.getPositions(userAddress, chainId);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(response, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error fetching positions: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
   );
 }

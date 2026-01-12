@@ -91,14 +91,13 @@ async function main() {
       console.log(
         `💓 Health check: http://${config.host}:${config.port}/health`
       );
-      console.log(`\n🛠️  Available MCP Tools: 18`);
+      console.log(`\n🛠️  Available MCP Tools: 17`);
       console.log(`   - Portfolio Management: 2 tools`);
-      console.log(`   - Opportunities: 4 tools`);
-      console.log(`   - Rebalancing: 5 tools`);
-      console.log(`   - Analytics: 3 tools`);
-      console.log(`   - Historical Data: 2 tools`);
-      console.log(`   - User Flow Helpers: 2 tools`);
-      console.log(`\n🔗 ZyFAI API: ${config.zyfiApiUrl}`);
+      console.log(`   - Opportunities: 3 tools`);
+      console.log(`   - Analytics & Metrics: 8 tools`);
+      console.log(`   - Historical Data: 3 tools`);
+      console.log(`   - User Flow Helpers: 1 tool`);
+      console.log(`\n🔗 ZyFAI SDK: Using @zyfai/sdk`);
       console.log(`${"=".repeat(60)}\n`);
     });
   } catch (error) {

@@ -11,43 +11,17 @@ export function registerOpportunitiesTools(
   zyfiApi: ZyFAIApiService
 ) {
   server.tool(
-    "get-top-opportunities",
-    "Get the top DeFi opportunities across all chains and protocols",
-    {},
-    async () => {
-      try {
-        const response = await zyfiApi.getTopOpportunities();
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching top opportunities: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  server.tool(
     "get-safe-opportunities",
     "Get safe (low risk) DeFi opportunities suitable for conservative investors",
-    {},
-    async () => {
+    {
+      chainId: z
+        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
+        .optional()
+        .describe("Optional chain ID to filter opportunities (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
+    },
+    async ({ chainId }) => {
       try {
-        const response = await zyfiApi.getSafeOpportunities();
+        const response = await zyfiApi.getSafeOpportunities(chainId);
         return {
           content: [
             {
@@ -73,12 +47,17 @@ export function registerOpportunitiesTools(
   );
 
   server.tool(
-    "get-degen-opportunities",
-    "Get high-risk high-reward DeFi opportunities for aggressive investors",
-    {},
-    async () => {
+    "get-degen-strategies",
+    "Get degen (high-risk, high-reward) yield strategies for aggressive investors",
+    {
+      chainId: z
+        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
+        .optional()
+        .describe("Optional chain ID to filter strategies (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
+    },
+    async ({ chainId }) => {
       try {
-        const response = await zyfiApi.getDegenOpportunities();
+        const response = await zyfiApi.getDegenStrategies(chainId);
         return {
           content: [
             {
@@ -92,7 +71,7 @@ export function registerOpportunitiesTools(
           content: [
             {
               type: "text",
-              text: `Error fetching degen opportunities: ${
+              text: `Error fetching degen strategies: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },
@@ -104,16 +83,16 @@ export function registerOpportunitiesTools(
   );
 
   server.tool(
-    "get-degen-acp-opportunities",
-    "Get degen ACP opportunities for a specific chain (high-risk, high-reward with ACP protocol)",
+    "get-available-protocols",
+    "Get available DeFi protocols and pools for a specific chain",
     {
       chainId: z
-        .number()
-        .describe("Chain ID (e.g., 8453 for Base, 42161 for Arbitrum)"),
+        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
+        .describe("Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
     },
     async ({ chainId }) => {
       try {
-        const response = await zyfiApi.getDegenAcpOpportunities(chainId);
+        const response = await zyfiApi.getAvailableProtocols(chainId);
         return {
           content: [
             {
@@ -127,7 +106,7 @@ export function registerOpportunitiesTools(
           content: [
             {
               type: "text",
-              text: `Error fetching degen ACP opportunities: ${
+              text: `Error fetching available protocols: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },
@@ -138,4 +117,3 @@ export function registerOpportunitiesTools(
     }
   );
 }
-
