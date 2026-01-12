@@ -1,9 +1,9 @@
-# ZyFAI Rebalancing MCP Server 🛠️
+# Zyfai Rebalancing MCP Server 🛠️
 
-A production-ready Model Context Protocol (MCP) server that exposes ZyFAI DeFi APIs through 15 powerful tools. Supports HTTP/SSE transport for deployment on Digital Ocean Droplets with complete portfolio management, rebalancing, and DeFi opportunities discovery.
+A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 15 powerful tools. Supports HTTP/SSE transport for deployment on Digital Ocean Droplets with complete portfolio management, rebalancing, and DeFi opportunities discovery.
 
 <a href="https://glama.ai/mcp/servers/vnt96edg3a">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/vnt96edg3a/badge" alt="ZyFAI Rebalancing MCP Server" />
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/vnt96edg3a/badge" alt="Zyfai Rebalancing MCP Server" />
 </a>
 
 ## Features
@@ -57,7 +57,7 @@ zyfai-sdk-mcp/
 ├── index.ts                              # Main server with 15 MCP tools
 ├── src/
 │   ├── services/
-│   │   └── zyfai-api.service.ts          # ZyFAI API client wrapper
+│   │   └── zyfai-api.service.ts          # Zyfai API client wrapper
 │   └── types/
 │       └── zyfai-api.types.ts            # TypeScript type definitions
 ├── package.json                          # Project dependencies
@@ -109,12 +109,11 @@ The server will be running at:
 - SSE endpoint: `http://localhost:3005/sse`
 - Health check: `http://localhost:3005/health`
 
-6. Configure ZyFAI API (optional):
+6. Configure Zyfai API (optional):
 
 ```bash
-# Edit .env and add your ZyFAI API configuration
+# Edit .env and add your Zyfai API configuration
 nano .env
-# Set ZYFAI_API_URL (default: https://defiapi.zyf.ai)
 # Optionally set ZYFAI_API_KEY if required
 ```
 

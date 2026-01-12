@@ -7,12 +7,11 @@ export const config = {
   // Server configuration
   port: process.env.PORT ? parseInt(process.env.PORT) : 3005,
   host: process.env.HOST || "0.0.0.0",
-  nodeEnv: process.env.NODE_ENV || "development",
 
   // CORS configuration
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") || ["*"],
 
-  // ZyFAI API configuration
+  // Zyfai API configuration
   zyfiApiKey: process.env.ZYFAI_API_KEY,
 
   // x402 Payment configuration

@@ -1,5 +1,5 @@
 /**
- * ZyFAI SDK Service
+ * Zyfai SDK Service
  * Wrapper service for Zyfai SDK
  */
 

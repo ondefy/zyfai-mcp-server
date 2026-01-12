@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * ZyFAI Rebalancing MCP Server - STDIO Mode
+ * Zyfai Rebalancing MCP Server - STDIO Mode
  * For direct use with Claude Desktop (no HTTP/SSE)
  */
 
@@ -40,12 +40,9 @@ async function main() {
     const transport = new StdioServerTransport();
 
     // Log to stderr to avoid interfering with stdio protocol
-    console.error("🚀 ZyFAI Rebalancing MCP Server (stdio mode)");
+    console.error("🚀 Zyfai Rebalancing MCP Server (stdio mode)");
     console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     console.error(`📦 Available Tools: 18`);
-    console.error(
-      `🔗 ZyFAI API: ${process.env.ZYFAI_API_URL || "https://defiapi.zyf.ai"}`
-    );
     console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     await server.connect(transport);

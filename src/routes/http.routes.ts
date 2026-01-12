@@ -39,10 +39,10 @@ export function setupRoutes(server: McpServer) {
   // Root endpoint
   router.get("/", (req: Request, res: Response) => {
     res.status(200).json({
-      message: "ZyFAI Rebalancing MCP Server",
+      message: "Zyfai Rebalancing MCP Server",
       version: "1.0.0",
       description:
-        "MCP server providing access to ZyFAI DeFi APIs for portfolio management, rebalancing, and opportunities discovery",
+        "MCP server providing access to Zyfai DeFi APIs for portfolio management, rebalancing, and opportunities discovery",
       endpoints: {
         health: "/health",
         sse: "/sse",

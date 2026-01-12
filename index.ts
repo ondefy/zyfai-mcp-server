@@ -1,5 +1,5 @@
 /**
- * ZyFAI Rebalancing MCP Server
+ * Zyfai Rebalancing MCP Server
  * Main entry point - Modular architecture
  */
 
@@ -82,7 +82,7 @@ async function main() {
     // Start Express server
     app.listen(config.port, config.host, () => {
       console.log(`\n${"=".repeat(60)}`);
-      console.log(`🚀 ZyFAI Rebalancing MCP Server v1.0.0`);
+      console.log(`🚀 Zyfai Rebalancing MCP Server v1.0.0`);
       console.log(`${"=".repeat(60)}`);
       console.log(
         `\n📡 Server running on http://${config.host}:${config.port}`
@@ -97,7 +97,7 @@ async function main() {
       console.log(`   - Analytics & Metrics: 8 tools`);
       console.log(`   - Historical Data: 3 tools`);
       console.log(`   - User Flow Helpers: 1 tool`);
-      console.log(`\n🔗 ZyFAI SDK: Using @zyfai/sdk`);
+      console.log(`\n🔗 Zyfai SDK: Using @zyfai/sdk`);
       console.log(`${"=".repeat(60)}\n`);
     });
   } catch (error) {
