@@ -1,144 +1,104 @@
+/**
+ * Zyfai Rebalancing MCP Server
+ * Main entry point - Modular architecture
+ */
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { z } from "zod";
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import cors from "cors";
 
-// Environment variables with defaults
-const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-const HOST = process.env.HOST || "0.0.0.0";
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(",") || ["*"];
+// Configuration
+import { config } from "./src/config/env.js";
 
-// Create Express app
+// Services
+import { ZyfaiApiService } from "./src/services/zyfai-api.service.js";
+
+// Tools
+import { registerAllTools } from "./src/tools/index.js";
+
+// Routes
+import { setupRoutes } from "./src/routes/http.routes.js";
+
+// Middleware
+import {
+  requestLogger,
+  errorHandler,
+  notFoundHandler,
+} from "./src/middleware/index.js";
+
+// ============================================================================
+// Initialize Services
+// ============================================================================
+
+const zyfiApi = new ZyfaiApiService();
+
+// ============================================================================
+// Create Express App
+// ============================================================================
+
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(
   cors({
-    origin: ALLOWED_ORIGINS,
+    origin: config.allowedOrigins,
     credentials: true,
   })
 );
+app.use(requestLogger);
 
-// Request logging middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
-});
+// ============================================================================
+// Create MCP Server & Register Tools
+// ============================================================================
 
-// Create server instance
 const server = new McpServer({
   name: "zyfai-rebalancing-mcp",
-  version: "0.0.1",
+  version: "1.0.0",
 });
 
-// Define a sample tool
-server.tool(
-  "rebalancing-tool",
-  "Rebalancing tool for ZYFAI",
-  {
-    input: z.string().describe("Input parameter for the rebalancing tool"),
-  },
-  async ({ input }) => {
-    // Process the input
-    const output = `Processed: ${input}`;
-    // Return the result
-    return {
-      content: [
-        {
-          type: "text",
-          text: output,
-        },
-      ],
-    };
-  }
-);
+// Register all MCP tools
+registerAllTools(server, zyfiApi);
 
-// Health check endpoint
-app.get("/health", (req: Request, res: Response) => {
-  res.status(200).json({
-    status: "healthy",
-    service: "zyfai-rebalancing-mcp",
-    version: "0.0.1",
-    timestamp: new Date().toISOString(),
-  });
-});
+// ============================================================================
+// Setup Routes
+// ============================================================================
 
-// Root endpoint
-app.get("/", (req: Request, res: Response) => {
-  res.status(200).json({
-    message: "ZYFAI Rebalancing MCP Server",
-    version: "0.0.1",
-    endpoints: {
-      health: "/health",
-      sse: "/sse",
-    },
-  });
-});
+app.use(setupRoutes(server));
 
-// SSE endpoint for MCP communication
-app.get("/sse", async (req: Request, res: Response) => {
-  console.log("New SSE connection established");
+// ============================================================================
+// Error Handlers
+// ============================================================================
 
-  // Set SSE headers
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+app.use(errorHandler);
+app.use(notFoundHandler);
 
-  try {
-    const transport = new SSEServerTransport("/message", res);
-    await server.connect(transport);
-
-    // Handle client disconnect
-    req.on("close", () => {
-      console.log("SSE connection closed");
-    });
-  } catch (error) {
-    console.error("Error in SSE connection:", error);
-    res.status(500).end();
-  }
-});
-
-// POST endpoint for MCP messages
-app.post("/message", async (req: Request, res: Response) => {
-  try {
-    // The SSE transport handles the message processing
-    // This endpoint is used by the client to send messages
-    res.status(200).json({ status: "received" });
-  } catch (error) {
-    console.error("Error processing message:", error);
-    res.status(500).json({
-      error: "Internal server error",
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
-  }
-});
-
-// Global error handler
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({
-    error: "Internal server error",
-    message: err.message,
-  });
-});
-
-// 404 handler
-app.use((req: Request, res: Response) => {
-  res.status(404).json({
-    error: "Not found",
-    path: req.path,
-  });
-});
+// ============================================================================
+// Server Initialization
+// ============================================================================
 
 async function main() {
   try {
     // Start Express server
-    app.listen(PORT, HOST, () => {
-      console.log(`MCP Server running on http://${HOST}:${PORT}`);
-      console.log(`SSE endpoint: http://${HOST}:${PORT}/sse`);
-      console.log(`Health check: http://${HOST}:${PORT}/health`);
+    app.listen(config.port, config.host, () => {
+      console.log(`\n${"=".repeat(60)}`);
+      console.log(`🚀 Zyfai Rebalancing MCP Server v1.0.0`);
+      console.log(`${"=".repeat(60)}`);
+      console.log(
+        `\n📡 Server running on http://${config.host}:${config.port}`
+      );
+      console.log(`🔌 SSE endpoint: http://${config.host}:${config.port}/sse`);
+      console.log(
+        `💓 Health check: http://${config.host}:${config.port}/health`
+      );
+      console.log(`\n🛠️  Available MCP Tools: 17`);
+      console.log(`   - Portfolio Management: 2 tools`);
+      console.log(`   - Opportunities: 3 tools`);
+      console.log(`   - Analytics & Metrics: 8 tools`);
+      console.log(`   - Historical Data: 3 tools`);
+      console.log(`   - User Flow Helpers: 1 tool`);
+      console.log(`\n🔗 Zyfai SDK: Using @zyfai/sdk`);
+      console.log(`${"=".repeat(60)}\n`);
     });
   } catch (error) {
     console.error("Failed to start server:", error);
@@ -146,7 +106,10 @@ async function main() {
   }
 }
 
-// Handle graceful shutdown
+// ============================================================================
+// Graceful Shutdown
+// ============================================================================
+
 process.on("SIGTERM", () => {
   console.log("SIGTERM received, shutting down gracefully...");
   process.exit(0);
@@ -156,6 +119,10 @@ process.on("SIGINT", () => {
   console.log("SIGINT received, shutting down gracefully...");
   process.exit(0);
 });
+
+// ============================================================================
+// Start Server
+// ============================================================================
 
 main().catch((error) => {
   console.error("Fatal error in main():", error);

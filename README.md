@@ -1,38 +1,41 @@
-# ZYFAI Rebalancing MCP Server 🛠️
+# Zyfai Rebalancing MCP Server 🛠️
 
-A production-ready Model Context Protocol (MCP) server with HTTP/SSE transport for deployment on Digital Ocean Droplets. This server can be accessed via HTTP endpoints, making it suitable for web applications and remote clients.
+A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 15 powerful tools. Supports HTTP/SSE transport for deployment on Digital Ocean Droplets with complete portfolio management, rebalancing, and DeFi opportunities discovery.
 
 <a href="https://glama.ai/mcp/servers/vnt96edg3a">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/vnt96edg3a/badge" alt="Server Template MCP server" />
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/vnt96edg3a/badge" alt="Zyfai Rebalancing MCP Server" />
 </a>
 
 ## Features
 
+- ✅ **17 MCP Tools** for complete DeFi workflow
+- ✅ **Portfolio Management** - Track positions across all chains
+- ✅ **Opportunities Discovery** - Find top DeFi yields
+- ✅ **Rebalancing** - Automated optimization recommendations
+- ✅ **Safe7579 Integration** - Smart contract wallet support
+- ✅ **ERC-8004 Session Keys** - Automated operations
 - ✅ HTTP/SSE transport for web-accessible endpoints
 - ✅ Express.js server with CORS support
 - ✅ Production-ready with PM2 process management
-- ✅ Nginx reverse proxy configuration
-- ✅ Docker support for containerized deployment
-- ✅ Health check endpoints
-- ✅ Comprehensive error handling
-- ✅ TypeScript with type safety
+- ✅ Comprehensive error handling & TypeScript
 - ✅ Built with [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
 
 ## Project Structure
 
 ```
-mcp-server-template/
-├── index.ts                  # Main server implementation (HTTP/SSE)
-├── package.json              # Project dependencies
-├── tsconfig.json             # TypeScript configuration
-├── ecosystem.config.cjs      # PM2 configuration
-├── nginx.conf                # Nginx reverse proxy config
-├── Dockerfile                # Docker containerization
-├── .dockerignore            # Docker ignore rules
-├── .env.example             # Environment variables template
-├── deploy.sh                # Automated deployment script
-├── DEPLOYMENT.md            # Detailed deployment guide
-└── build/                   # Compiled JavaScript output
+zyfai-sdk-mcp/
+├── index.ts                              # Main server with 15 MCP tools
+├── src/
+│   ├── services/
+│   │   └── zyfai-api.service.ts          # Zyfai API client wrapper
+│   └── types/
+│       └── zyfai-api.types.ts            # TypeScript type definitions
+├── package.json                          # Project dependencies
+├── tsconfig.json                         # TypeScript configuration
+├── ecosystem.config.cjs                  # PM2 configuration
+├── .env.example                          # Environment variables template
+├── MCP_TOOLS.md                          # Complete tools documentation
+└── build/                                # Compiled JavaScript output
 ```
 
 ## Getting Started
@@ -72,9 +75,17 @@ pnpm start
 
 The server will be running at:
 
-- Main endpoint: `http://localhost:3000/`
-- SSE endpoint: `http://localhost:3000/sse`
-- Health check: `http://localhost:3000/health`
+- Main endpoint: `http://localhost:3005/`
+- SSE endpoint: `http://localhost:3005/sse`
+- Health check: `http://localhost:3005/health`
+
+6. Configure Zyfai API (optional):
+
+```bash
+# Edit .env and add your Zyfai API configuration
+nano .env
+# Optionally set ZYFAI_API_KEY if required
+```
 
 ### Production Deployment on Digital Ocean
 
