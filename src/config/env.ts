@@ -13,10 +13,4 @@ export const config = {
 
   // Zyfai API configuration
   zyfiApiKey: process.env.ZYFAI_API_KEY,
-
-  // x402 Payment configuration
-  x402Enabled: process.env.X402_ENABLED === "true",
-  x402FacilitatorUrl:
-    process.env.X402_FACILITATOR_URL || "https://facilitator.x402.rs",
-  x402ReceiverAddress: process.env.X402_RECEIVER_ADDRESS,
 } as const;

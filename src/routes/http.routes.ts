@@ -6,7 +6,6 @@
 import { Router, Request, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-import { x402PaymentMiddleware } from "../middleware/index.js";
 
 const router = Router();
 
@@ -95,12 +94,8 @@ export function setupRoutes(server: McpServer) {
 
   /**
    * POST /messages - Receives messages for a session
-   * x402 payment middleware applied here to intercept tool calls
    */
-  router.post(
-    "/messages",
-    x402PaymentMiddleware,
-    async (req: Request, res: Response) => {
+  router.post("/messages", async (req: Request, res: Response) => {
       const sessionId = req.query.sessionId as string;
 
       if (!sessionId) {

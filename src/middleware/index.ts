@@ -5,15 +5,6 @@
 import { Request, Response, NextFunction } from "express";
 
 /**
- * Export x402 middleware
- */
-export {
-  x402Middleware,
-  x402PaymentMiddleware,
-  X402Middleware,
-} from "./x402.middleware.js";
-
-/**
  * Request logging middleware
  */
 export function requestLogger(req: Request, res: Response, next: NextFunction) {

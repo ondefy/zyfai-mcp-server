@@ -11,7 +11,13 @@ export class ZyfaiApiService {
 
   constructor() {
     if (!config.zyfiApiKey) {
-      throw new Error("ZYFAI_API_KEY is required");
+      console.warn("\n WARNING: ZYFAI_API_KEY not set. API calls will fail.");
+      console.warn("   Please set ZYFAI_API_KEY in your .env file\n");
+      // Use a placeholder to allow server to start for testing
+      this.sdk = new ZyfaiSDK({
+        apiKey: "placeholder-key-for-testing",
+      });
+      return;
     }
 
     this.sdk = new ZyfaiSDK({
