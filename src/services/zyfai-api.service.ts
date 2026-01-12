@@ -6,7 +6,7 @@
 import { ZyfaiSDK, SupportedChainId } from "@zyfai/sdk";
 import { config } from "../config/env.js";
 
-export class ZyFAIApiService {
+export class ZyfaiApiService {
   private sdk: ZyfaiSDK;
 
   constructor() {

@@ -4,11 +4,11 @@
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ZyFAIApiService } from "../services/zyfai-api.service.js";
+import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
 export function registerPortfolioTools(
   server: McpServer,
-  zyfiApi: ZyFAIApiService
+  zyfiApi: ZyfaiApiService
 ) {
   server.tool(
     "get-debank-portfolio",
@@ -55,7 +55,9 @@ export function registerPortfolioTools(
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .optional()
-        .describe("Optional chain ID to filter positions (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
+        .describe(
+          "Optional chain ID to filter positions (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+        ),
     },
     async ({ userAddress, chainId }) => {
       try {

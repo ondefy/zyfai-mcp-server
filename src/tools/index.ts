@@ -4,7 +4,7 @@
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ZyFAIApiService } from "../services/zyfai-api.service.js";
+import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import { registerPortfolioTools } from "./portfolio.tools.js";
 import { registerOpportunitiesTools } from "./opportunities.tools.js";
 import { registerAnalyticsTools } from "./analytics.tools.js";
@@ -14,7 +14,7 @@ import { registerHelperTools } from "./helpers.tools.js";
 /**
  * Register all MCP tools with the server
  */
-export function registerAllTools(server: McpServer, zyfiApi: ZyFAIApiService) {
+export function registerAllTools(server: McpServer, zyfiApi: ZyfaiApiService) {
   registerPortfolioTools(server, zyfiApi);
   registerOpportunitiesTools(server, zyfiApi);
   registerAnalyticsTools(server, zyfiApi);

@@ -4,11 +4,11 @@
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ZyFAIApiService } from "../services/zyfai-api.service.js";
+import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
 export function registerOpportunitiesTools(
   server: McpServer,
-  zyfiApi: ZyFAIApiService
+  zyfiApi: ZyfaiApiService
 ) {
   server.tool(
     "get-safe-opportunities",
@@ -17,7 +17,9 @@ export function registerOpportunitiesTools(
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .optional()
-        .describe("Optional chain ID to filter opportunities (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
+        .describe(
+          "Optional chain ID to filter opportunities (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+        ),
     },
     async ({ chainId }) => {
       try {
@@ -53,7 +55,9 @@ export function registerOpportunitiesTools(
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .optional()
-        .describe("Optional chain ID to filter strategies (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
+        .describe(
+          "Optional chain ID to filter strategies (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+        ),
     },
     async ({ chainId }) => {
       try {
@@ -88,7 +92,9 @@ export function registerOpportunitiesTools(
     {
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .describe("Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"),
+        .describe(
+          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+        ),
     },
     async ({ chainId }) => {
       try {

@@ -11,7 +11,7 @@ import cors from "cors";
 import { config } from "./src/config/env.js";
 
 // Services
-import { ZyFAIApiService } from "./src/services/zyfai-api.service.js";
+import { ZyfaiApiService } from "./src/services/zyfai-api.service.js";
 
 // Tools
 import { registerAllTools } from "./src/tools/index.js";
@@ -30,7 +30,7 @@ import {
 // Initialize Services
 // ============================================================================
 
-const zyfiApi = new ZyFAIApiService();
+const zyfiApi = new ZyfaiApiService();
 
 // ============================================================================
 // Create Express App

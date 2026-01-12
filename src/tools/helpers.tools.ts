@@ -4,11 +4,11 @@
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ZyFAIApiService } from "../services/zyfai-api.service.js";
+import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
 export function registerHelperTools(
   server: McpServer,
-  zyfiApi: ZyFAIApiService
+  zyfiApi: ZyfaiApiService
 ) {
   server.tool(
     "get-user-details",

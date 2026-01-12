@@ -8,7 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
 // Services
-import { ZyFAIApiService } from "./src/services/zyfai-api.service.js";
+import { ZyfaiApiService } from "./src/services/zyfai-api.service.js";
 
 // Tools
 import { registerAllTools } from "./src/tools/index.js";
@@ -17,7 +17,7 @@ import { registerAllTools } from "./src/tools/index.js";
 // Initialize Services
 // ============================================================================
 
-const zyfiApi = new ZyFAIApiService();
+const zyfiApi = new ZyfaiApiService();
 
 // ============================================================================
 // Create MCP Server & Register Tools
