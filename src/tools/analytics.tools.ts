@@ -193,7 +193,7 @@ export function registerAnalyticsTools(
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .describe(
-          "Chain ID to filter wallets (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+          "Chain ID to filter wallets (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
     async ({ chainId }) => {

@@ -18,7 +18,7 @@ export function registerOpportunitiesTools(
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .optional()
         .describe(
-          "Optional chain ID to filter opportunities (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+          "Optional chain ID to filter opportunities (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
     async ({ chainId }) => {
@@ -56,7 +56,7 @@ export function registerOpportunitiesTools(
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .optional()
         .describe(
-          "Optional chain ID to filter strategies (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+          "Optional chain ID to filter strategies (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
     async ({ chainId }) => {
@@ -93,7 +93,7 @@ export function registerOpportunitiesTools(
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
     async ({ chainId }) => {

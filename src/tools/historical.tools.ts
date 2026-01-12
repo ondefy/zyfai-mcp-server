@@ -18,7 +18,7 @@ export function registerHistoricalTools(
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
       limit: z
         .number()
@@ -115,7 +115,7 @@ export function registerHistoricalTools(
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])
         .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Sonic)"
+          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
     async ({ walletAddress, chainId }) => {
