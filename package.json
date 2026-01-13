@@ -1,16 +1,17 @@
 {
-  "name": "zyfai-rebalancing-mcp",
+  "name": "zyfai-defi-mcp",
   "version": "0.0.1",
   "main": "build/index.js",
   "keywords": [
     "mcp",
     "zyfai",
     "rebalancing",
+    "defi",
     "erc-8004"
   ],
   "author": "",
   "license": "ISC",
-  "description": "Zyfai Rebalancing MCP Server with HTTP/SSE transport",
+  "description": "Zyfai DeFi MCP Server with HTTP/SSE transport",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.5.0",
     "@zyfai/sdk": "^0.1.31",
