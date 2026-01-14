@@ -86,6 +86,64 @@ zyfai-mcp-server/
 └── build/                                # Compiled JavaScript output
 ```
 
+## Client Integration
+
+## Using with Claude Code
+
+If you'd like to add zyfai mcp server under your claude code, execute the below in a separate terminal, not under a claude code session
+
+```
+claude mcp add --transport sse zyfai-defi https://mcp.zyf.ai/sse
+```
+
+### Using with Claude Desktop
+
+For **remote HTTP/SSE server** :
+
+```json
+{
+  "mcpServers": {
+    "zyfai-defi": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://mcp.zyf.ai/sse"]
+    }
+  }
+}
+```
+
+### Using with Web Applications
+
+The server uses SSE (Server-Sent Events) transport, making it accessible from web browsers and HTTP clients:
+
+```javascript
+// Example: Connecting to the MCP server
+const sseUrl = "https://mcp.zyf.ai/sse";
+const eventSource = new EventSource(sseUrl);
+
+eventSource.onmessage = (event) => {
+  console.log("Received:", event.data);
+};
+```
+
+### Example Tool Call
+
+```javascript
+// Example: Get safe opportunities on Base
+const response = await fetch("https://zyf.ai/messages?sessionId=xxx", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    method: "tools/call",
+    params: {
+      name: "get-safe-opportunities",
+      arguments: {
+        chainId: 8453,
+      },
+    },
+  }),
+});
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -153,104 +211,6 @@ pnpm run dev
 
 This will build and start the server in development mode.
 
-## Supported Chains
-
-The MCP server supports the following chains (as defined by `SupportedChainId` in `@zyfai/sdk`):
-
-- **Base** (Chain ID: `8453`)
-- **Arbitrum** (Chain ID: `42161`)
-- **Sonic** (Chain ID: `9745`)
-
-When using tools that require a chain ID, you must use one of these exact values. The tools use strict TypeScript types to ensure only supported chains are used.
-
-## Client Integration
-
-### Using with Web Applications
-
-The server uses SSE (Server-Sent Events) transport, making it accessible from web browsers and HTTP clients:
-
-```javascript
-// Example: Connecting to the MCP server
-const sseUrl = "https://your-domain.com/sse";
-const eventSource = new EventSource(sseUrl);
-
-eventSource.onmessage = (event) => {
-  console.log("Received:", event.data);
-};
-```
-
-### Using with Claude Desktop
-
-For **remote HTTP/SSE server** (e.g., deployed on Digital Ocean):
-
-```json
-{
-  "mcpServers": {
-    "zyfai-defi": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://your-domain.com/sse"]
-    }
-  }
-}
-```
-
-### Example Tool Call
-
-```javascript
-// Example: Get safe opportunities on Base
-const response = await fetch("https://your-domain.com/messages?sessionId=xxx", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    method: "tools/call",
-    params: {
-      name: "get-safe-opportunities",
-      arguments: {
-        chainId: 8453,
-      },
-    },
-  }),
-});
-```
-
-## Production Deployment
-
-### Using PM2
-
-1. Build the project:
-
-```bash
-pnpm run build
-```
-
-2. Start with PM2:
-
-```bash
-pm2 start ecosystem.config.cjs
-```
-
-3. Monitor:
-
-```bash
-pm2 status
-pm2 logs zyfai-mcp-server
-pm2 monit
-```
-
-### Using Docker
-
-```bash
-# Build image
-docker build -t zyfai-mcp-server .
-
-# Run container
-docker run -p 3005:3005 \
-  -e PORT=3005 \
-  -e ZYFAI_API_KEY=your_key_here \
-  -e ALLOWED_ORIGINS="*" \
-  zyfai-mcp-server
-```
-
 ## Environment Variables
 
 Configure your server using environment variables:
@@ -273,43 +233,6 @@ Configure your server using environment variables:
 
 - `index.ts` - HTTP/SSE server for web/remote access
 - `index-stdio.ts` - STDIO server for Claude Desktop (local)
-
-## Error Handling
-
-All tools return structured error responses:
-
-```json
-{
-  "content": [
-    {
-      "type": "text",
-      "text": "Error message here"
-    }
-  ],
-  "isError": true
-}
-```
-
-## Monitoring
-
-Once deployed, monitor your server with:
-
-```bash
-# View PM2 status
-pm2 status
-
-# View logs
-pm2 logs zyfai-mcp-server
-
-# Monitor resources
-pm2 monit
-
-# View health check
-curl http://localhost:3005/health
-
-# View health check (if deployed with domain)
-curl https://your-domain.com/health
-```
 
 ## Contributing
 
