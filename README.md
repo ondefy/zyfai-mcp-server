@@ -271,31 +271,6 @@ Configure your server using environment variables:
 - `index.ts` - HTTP/SSE server for web/remote access
 - `index-stdio.ts` - STDIO server for Claude Desktop (local)
 
-## SDK Methods Coverage
-
-This MCP server exposes all read-only/public data methods from the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk):
-
-✅ **Included:**
-
-- `getAvailableProtocols` → `get-available-protocols`
-- `getPositions` → `get-positions`
-- `getUserDetails` → `get-user-details`
-- `getTVL` → `get-tvl`
-- `getVolume` → `get-volume`
-- `getActiveWallets` → `get-active-wallets`
-- `getSmartWalletByEOA` → `get-smart-wallet-by-eoa`
-- `getFirstTopup` → `get-first-topup`
-- `getHistory` → `get-history`
-- `getOnchainEarnings` → `get-onchain-earnings`
-- `calculateOnchainEarnings` → `calculate-onchain-earnings`
-- `getDailyEarnings` → `get-daily-earnings`
-- `getDebankPortfolio` → `get-debank-portfolio`
-- `getSafeOpportunities` → `get-safe-opportunities`
-- `getDegenStrategies` → `get-degen-strategies`
-- `getDailyApyHistory` → `get-daily-apy-history`
-- `getRebalanceFrequency` → `get-rebalance-frequency`
-- `getAPYPerStrategy` → `get-apy-per-strategy`
-
 ## Error Handling
 
 All tools return structured error responses:
