@@ -56,7 +56,8 @@ A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi A
 
 ```
 erc8004-mcp-server/
-├── index.ts                              # Main server entry point
+├── index.ts                              # Main HTTP/SSE server entry point
+├── index-stdio.ts                        # STDIO server for Claude Desktop
 ├── src/
 │   ├── config/
 │   │   └── env.ts                        # Environment configuration
@@ -64,22 +65,22 @@ erc8004-mcp-server/
 │   │   └── zyfai-api.service.ts          # Zyfai SDK wrapper service
 │   ├── tools/
 │   │   ├── index.ts                      # Tool registration
-│   │   ├── portfolio.tools.ts            # Portfolio tools
-│   │   ├── opportunities.tools.ts        # Opportunities tools
-│   │   ├── analytics.tools.ts             # Analytics tools
-│   │   ├── historical.tools.ts           # Historical data tools
-│   │   └── helpers.tools.ts               # Helper tools
+│   │   ├── portfolio.tools.ts             # Portfolio tools (2 tools)
+│   │   ├── opportunities.tools.ts        # Opportunities tools (3 tools)
+│   │   ├── analytics.tools.ts             # Analytics tools (8 tools)
+│   │   ├── historical.tools.ts           # Historical data tools (3 tools)
+│   │   └── helpers.tools.ts              # Helper tools (1 tool)
 │   ├── routes/
-│   │   └── http.routes.ts                 # HTTP/SSE routes
+│   │   └── http.routes.ts                # HTTP/SSE routes
 │   ├── middleware/
-│   │   ├── index.ts                       # Middleware exports
-│   │   └── x402.middleware.ts             # x402 payment middleware (optional)
+│   │   └── index.ts                       # Middleware (logger, error handler)
 │   └── types/
 │       └── zyfai-api.types.ts            # TypeScript type definitions
-├── package.json                           # Project dependencies
+├── package.json                          # Project dependencies
 ├── tsconfig.json                         # TypeScript configuration
 ├── ecosystem.config.cjs                  # PM2 configuration
 ├── Dockerfile                            # Docker configuration
+├── setup-domain.sh                       # Domain setup script
 └── build/                                # Compiled JavaScript output
 ```
 
@@ -106,22 +107,21 @@ cd zyfai-defi-mcp
 pnpm install
 ```
 
-3. Create environment file:
+3. Create environment file (optional):
 
 ```bash
-cp env.x402.example .env
-```
-
-4. Configure environment variables (optional):
-
-```bash
-# Edit .env and add your Zyfai API key
-ZYFAI_API_KEY=your_api_key_here
+# Create .env file
+cat > .env <<EOF
 PORT=3005
 HOST=0.0.0.0
+ALLOWED_ORIGINS=*
+ZYFAI_API_KEY=your_api_key_here
+EOF
 ```
 
-**Note:** The server will start without an API key, but API calls will fail. Set `ZYFAI_API_KEY` for full functionality.
+4. Configure environment variables:
+
+**Note:** The server will start without an API key (shows a warning), but API calls will fail. Set `ZYFAI_API_KEY` in your `.env` file for full functionality.
 
 5. Build the project:
 
@@ -151,13 +151,13 @@ This will build and start the server in development mode.
 
 ## Supported Chains
 
-The MCP server supports the following chains:
+The MCP server supports the following chains (as defined by `SupportedChainId` in `@zyfai/sdk`):
 
-- **Base** (Chain ID: 8453)
-- **Arbitrum** (Chain ID: 42161)
-- **Plasma** (Chain ID: 9745)
+- **Base** (Chain ID: `8453`)
+- **Arbitrum** (Chain ID: `42161`)
+- **Sonic** (Chain ID: `9745`)
 
-When using tools that require a chain ID, use one of these values.
+When using tools that require a chain ID, you must use one of these exact values. The tools use strict TypeScript types to ensure only supported chains are used.
 
 ## Client Integration
 
@@ -175,16 +175,29 @@ eventSource.onmessage = (event) => {
 };
 ```
 
-### Using with MCP Clients
+### Using with Claude Desktop
 
-You can connect using any MCP-compatible client by pointing to your HTTP endpoint:
+For **remote HTTP/SSE server** (e.g., deployed on Digital Ocean):
 
 ```json
 {
   "mcpServers": {
     "zyfai-defi": {
-      "url": "https://your-domain.com/sse",
-      "transport": "sse"
+      "command": "npx",
+      "args": ["mcp-remote", "https://mcp.zyf.ai/sse", "--allow-http"]
+    }
+  }
+}
+```
+
+For **local stdio server** (recommended for Claude Desktop):
+
+```json
+{
+  "mcpServers": {
+    "zyfai-defi": {
+      "command": "node",
+      "args": ["/path/to/erc8004-mcp-server/build/index-stdio.js"]
     }
   }
 }
@@ -229,7 +242,7 @@ pm2 start ecosystem.config.cjs
 
 ```bash
 pm2 status
-pm2 logs zyfai-defi-mcp
+pm2 logs zyfai-mcp-server
 pm2 monit
 ```
 
@@ -249,28 +262,74 @@ docker run -p 3005:3005 \
 
 ### Digital Ocean Deployment
 
-See deployment scripts in the repository for automated deployment to Digital Ocean Droplets.
+1. **SSH into your droplet:**
+
+   ```bash
+   ssh root@your-droplet-ip
+   ```
+
+2. **Clone and setup:**
+
+   ```bash
+   git clone [your-repo-url] /var/www/zyfai-mcp-server
+   cd /var/www/zyfai-mcp-server
+   pnpm install
+   pnpm run build
+   ```
+
+3. **Configure environment:**
+
+   ```bash
+   # Create .env file
+   nano .env
+   # Add: ZYFAI_API_KEY=your_key_here
+   ```
+
+4. **Start with PM2:**
+
+   ```bash
+   pm2 start ecosystem.config.cjs
+   pm2 save
+   pm2 startup
+   ```
+
+5. **Configure nginx (optional, for custom domain):**
+
+   ```bash
+   # Run the domain setup script
+   sudo bash setup-domain.sh
+
+   # Or manually configure nginx (see setup-domain.sh for commands)
+   ```
+
+6. **Add DNS record in Cloudflare:**
+   - Add A record: `mcp` → `your-droplet-ip`
+   - Enable proxy (orange cloud) for SSL
+   - Domain will be accessible at `https://mcp.zyf.ai`
 
 ## Environment Variables
 
 Configure your server using environment variables:
 
-| Variable               | Description                            | Default                       | Required            |
-| ---------------------- | -------------------------------------- | ----------------------------- | ------------------- |
-| `PORT`                 | Server port                            | `3005`                        | No                  |
-| `HOST`                 | Host to bind to                        | `0.0.0.0`                     | No                  |
-| `ZYFAI_API_KEY`        | Zyfai API key                          | -                             | Yes (for API calls) |
-| `ALLOWED_ORIGINS`      | CORS allowed origins (comma-separated) | `*`                           | No                  |
-| `NODE_ENV`             | Environment mode                       | `development`                 | No                  |
-| `X402_ENABLED`         | Enable x402 payment middleware         | `false`                       | No                  |
-| `X402_FACILITATOR_URL` | x402 facilitator URL                   | `https://facilitator.x402.rs` | No                  |
+| Variable          | Description                            | Default       | Required            |
+| ----------------- | -------------------------------------- | ------------- | ------------------- |
+| `PORT`            | Server port                            | `3005`        | No                  |
+| `HOST`            | Host to bind to                        | `0.0.0.0`     | No                  |
+| `ZYFAI_API_KEY`   | Zyfai API key                          | -             | Yes (for API calls) |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `*`           | No                  |
+| `NODE_ENV`        | Environment mode                       | `development` | No                  |
 
 ## Available Scripts
 
 - `pnpm run build` - Compile TypeScript to JavaScript
-- `pnpm start` - Start the production server
+- `pnpm start` - Start the production HTTP/SSE server (`build/index.js`)
 - `pnpm run dev` - Build and start in development mode
 - `pnpm run clean` - Clean build directory
+
+**Note:** The project includes both:
+
+- `index.ts` - HTTP/SSE server for web/remote access
+- `index-stdio.ts` - STDIO server for Claude Desktop (local)
 
 ## SDK Methods Coverage
 
@@ -333,13 +392,16 @@ Once deployed, monitor your server with:
 pm2 status
 
 # View logs
-pm2 logs zyfai-defi-mcp
+pm2 logs zyfai-mcp-server
 
 # Monitor resources
 pm2 monit
 
 # View health check
 curl http://localhost:3005/health
+
+# View health check (if deployed with domain)
+curl https://mcp.zyf.ai/health
 ```
 
 ## Contributing
