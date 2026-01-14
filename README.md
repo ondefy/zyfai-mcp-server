@@ -1,6 +1,6 @@
 # Zyfai DeFi MCP Server 🛠️
 
-A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports HTTP/SSE transport for deployment on Digital Ocean Droplets with complete portfolio management, analytics, and DeFi opportunities discovery.
+A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports HTTP/SSE transport with complete portfolio management, analytics, and DeFi opportunities discovery.
 
 ## Features
 
@@ -55,7 +55,7 @@ A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi A
 ## Project Structure
 
 ```
-erc8004-mcp-server/
+zyfai-mcp-server/
 ├── index.ts                              # Main HTTP/SSE server entry point
 ├── index-stdio.ts                        # STDIO server for Claude Desktop
 ├── src/
@@ -97,8 +97,8 @@ erc8004-mcp-server/
 1. Clone the repository:
 
 ```bash
-git clone [your-repo-url] zyfai-defi-mcp
-cd zyfai-defi-mcp
+git clone https://github.com/ondefy/zyfai-mcp-server
+cd zyfai-mcp-server
 ```
 
 2. Install dependencies:
@@ -121,6 +121,7 @@ EOF
 
 4. Configure environment variables:
 
+Get your ZYFAI_API_KEY from [Zyfai SDK Dashboard](https://sdk.zyf.ai/)
 **Note:** The server will start without an API key (shows a warning), but API calls will fail. Set `ZYFAI_API_KEY` in your `.env` file for full functionality.
 
 5. Build the project:
@@ -184,20 +185,7 @@ For **remote HTTP/SSE server** (e.g., deployed on Digital Ocean):
   "mcpServers": {
     "zyfai-defi": {
       "command": "npx",
-      "args": ["mcp-remote", "https://mcp.zyf.ai/sse", "--allow-http"]
-    }
-  }
-}
-```
-
-For **local stdio server** (recommended for Claude Desktop):
-
-```json
-{
-  "mcpServers": {
-    "zyfai-defi": {
-      "command": "node",
-      "args": ["/path/to/erc8004-mcp-server/build/index-stdio.js"]
+      "args": ["mcp-remote", "https://your-domain.com/sse"]
     }
   }
 }
@@ -250,74 +238,26 @@ pm2 monit
 
 ```bash
 # Build image
-docker build -t zyfai-defi-mcp .
+docker build -t zyfai-mcp-server .
 
 # Run container
 docker run -p 3005:3005 \
   -e PORT=3005 \
   -e ZYFAI_API_KEY=your_key_here \
   -e ALLOWED_ORIGINS="*" \
-  zyfai-defi-mcp
+  zyfai-mcp-server
 ```
-
-### Digital Ocean Deployment
-
-1. **SSH into your droplet:**
-
-   ```bash
-   ssh root@your-droplet-ip
-   ```
-
-2. **Clone and setup:**
-
-   ```bash
-   git clone [your-repo-url] /var/www/zyfai-mcp-server
-   cd /var/www/zyfai-mcp-server
-   pnpm install
-   pnpm run build
-   ```
-
-3. **Configure environment:**
-
-   ```bash
-   # Create .env file
-   nano .env
-   # Add: ZYFAI_API_KEY=your_key_here
-   ```
-
-4. **Start with PM2:**
-
-   ```bash
-   pm2 start ecosystem.config.cjs
-   pm2 save
-   pm2 startup
-   ```
-
-5. **Configure nginx (optional, for custom domain):**
-
-   ```bash
-   # Run the domain setup script
-   sudo bash setup-domain.sh
-
-   # Or manually configure nginx (see setup-domain.sh for commands)
-   ```
-
-6. **Add DNS record in Cloudflare:**
-   - Add A record: `mcp` → `your-droplet-ip`
-   - Enable proxy (orange cloud) for SSL
-   - Domain will be accessible at `https://mcp.zyf.ai`
 
 ## Environment Variables
 
 Configure your server using environment variables:
 
-| Variable          | Description                            | Default       | Required            |
-| ----------------- | -------------------------------------- | ------------- | ------------------- |
-| `PORT`            | Server port                            | `3005`        | No                  |
-| `HOST`            | Host to bind to                        | `0.0.0.0`     | No                  |
-| `ZYFAI_API_KEY`   | Zyfai API key                          | -             | Yes (for API calls) |
-| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `*`           | No                  |
-| `NODE_ENV`        | Environment mode                       | `development` | No                  |
+| Variable          | Description                            | Default   | Required            |
+| ----------------- | -------------------------------------- | --------- | ------------------- |
+| `PORT`            | Server port                            | `3005`    | No                  |
+| `HOST`            | Host to bind to                        | `0.0.0.0` | No                  |
+| `ZYFAI_API_KEY`   | Zyfai SDK API key                      | -         | Yes (for API calls) |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `*`       | No                  |
 
 ## Available Scripts
 
@@ -356,17 +296,6 @@ This MCP server exposes all read-only/public data methods from the [@zyfai/sdk](
 - `getRebalanceFrequency` → `get-rebalance-frequency`
 - `getAPYPerStrategy` → `get-apy-per-strategy`
 
-❌ **Excluded (require wallet connection/signing):**
-
-- `connectAccount` - Requires wallet provider
-- `disconnectAccount` - Requires wallet connection
-- `deploySafe` - Requires wallet signing
-- `createSessionKey` - Requires wallet signing
-- `depositFunds` - Requires wallet signing
-- `withdrawFunds` - Requires wallet signing
-- `getSmartWalletAddress` - Requires wallet connection
-- `updateUserProfile` - Requires authentication
-
 ## Error Handling
 
 All tools return structured error responses:
@@ -401,7 +330,7 @@ pm2 monit
 curl http://localhost:3005/health
 
 # View health check (if deployed with domain)
-curl https://mcp.zyf.ai/health
+curl https://your-domain.com/health
 ```
 
 ## Contributing

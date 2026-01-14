@@ -1,5 +1,5 @@
 {
-  "name": "zyfai-defi-mcp",
+  "name": "zyfai-mcp-server",
   "version": "0.0.1",
   "main": "build/index.js",
   "keywords": [
