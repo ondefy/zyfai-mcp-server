@@ -2,6 +2,8 @@
 
 A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports HTTP/SSE transport with complete portfolio management, analytics, and DeFi opportunities discovery.
 
+You can make use of the official Zyfai mcp server deployed [here](https://mcp.zyf.ai) or run your own.
+
 ## Features
 
 - ✅ **17 MCP Tools** for complete DeFi workflow
