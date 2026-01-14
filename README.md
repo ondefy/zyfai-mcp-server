@@ -125,24 +125,274 @@ eventSource.onmessage = (event) => {
 };
 ```
 
-### Example Tool Call
+### Building LLM-Powered DeFi Apps with Zyfai MCP
 
-```javascript
-// Example: Get safe opportunities on Base
-const response = await fetch("https://zyf.ai/messages?sessionId=xxx", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    method: "tools/call",
-    params: {
-      name: "get-safe-opportunities",
-      arguments: {
-        chainId: 8453,
-      },
-    },
-  }),
-});
+For developers building **AI-powered DeFi agents** that can autonomously discover yield opportunities, analyze portfolios, and provide intelligent recommendations, here's how to integrate the Zyfai MCP server with your LLM application.
+
+**Installation:**
+
+```bash
+# For Anthropic Claude
+npm install @modelcontextprotocol/sdk @anthropic-ai/sdk
+
+# For OpenAI GPT
+npm install @modelcontextprotocol/sdk openai
+
+# Or use pnpm
+pnpm add @modelcontextprotocol/sdk openai
 ```
+
+**Complete Example - AI DeFi Yield Optimizer:**
+
+This example shows how to build an LLM agent that uses Zyfai MCP server to create an intelligent DeFi assistant. Choose between OpenAI or Anthropic based on your preference.
+
+```typescript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import OpenAI from "openai";
+
+/**
+ * Initialize Zyfai MCP Client
+ */
+async function initializeZyfaiMCP() {
+  const transport = new SSEClientTransport(new URL("https://mcp.zyf.ai/sse"));
+
+  const client = new Client(
+    {
+      name: "defi-ai-agent",
+      version: "1.0.0",
+    },
+    {
+      capabilities: {},
+    }
+  );
+
+  await client.connect(transport);
+  console.log("✅ Connected to Zyfai MCP Server");
+
+  return client;
+}
+
+/**
+ * DeFi AI Agent with OpenAI - Combines LLM reasoning with Zyfai MCP tools
+ */
+class DeFiAIAgent {
+  private zyfaiClient: Client;
+  private openai: OpenAI;
+  private availableTools: any[];
+
+  constructor(zyfaiClient: Client, openaiApiKey: string) {
+    this.zyfaiClient = zyfaiClient;
+    this.openai = new OpenAI({ apiKey: openaiApiKey });
+    this.availableTools = [];
+  }
+
+  /**
+   * Initialize agent by discovering available Zyfai tools
+   */
+  async initialize() {
+    const toolsResponse = await this.zyfaiClient.listTools();
+
+    // Convert MCP tool schema to OpenAI function calling format
+    this.availableTools = toolsResponse.tools.map((tool) => ({
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.inputSchema,
+      },
+    }));
+
+    console.log(
+      `🤖 Agent initialized with ${this.availableTools.length} Zyfai tools`
+    );
+  }
+
+  /**
+   * Execute a tool call via Zyfai MCP
+   */
+  async executeTool(toolName: string, toolInput: any) {
+    console.log(`🔧 Executing: ${toolName}`, toolInput);
+
+    const result = await this.zyfaiClient.callTool({
+      name: toolName,
+      arguments: toolInput,
+    });
+
+    // Extract text content from MCP response
+    const content = result.content
+      .filter((item: any) => item.type === "text")
+      .map((item: any) => item.text)
+      .join("\n");
+
+    return content;
+  }
+
+  /**
+   * Chat with the AI agent - it can use Zyfai tools automatically
+   */
+  async chat(userMessage: string, conversationHistory: any[] = []) {
+    const messages = [
+      ...conversationHistory,
+      {
+        role: "user",
+        content: userMessage,
+      },
+    ];
+
+    let response = await this.openai.chat.completions.create({
+      model: "gpt-4o", // or "gpt-4-turbo", "gpt-3.5-turbo"
+      messages: messages,
+      tools: this.availableTools,
+      tool_choice: "auto",
+    });
+
+    let message = response.choices[0].message;
+    console.log(
+      `💭 Response finish reason: ${response.choices[0].finish_reason}`
+    );
+
+    // Handle tool calls iteratively
+    while (message.tool_calls && message.tool_calls.length > 0) {
+      // Add assistant's response to conversation
+      messages.push(message);
+
+      // Execute each tool call
+      for (const toolCall of message.tool_calls) {
+        const toolName = toolCall.function.name;
+        const toolArgs = JSON.parse(toolCall.function.arguments);
+
+        // Execute the tool via Zyfai MCP
+        const toolResult = await this.executeTool(toolName, toolArgs);
+
+        // Add tool result to conversation
+        messages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: toolResult,
+        });
+      }
+
+      // Get next response from OpenAI
+      response = await this.openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: messages,
+        tools: this.availableTools,
+        tool_choice: "auto",
+      });
+
+      message = response.choices[0].message;
+      console.log(
+        `💭 Continued finish reason: ${response.choices[0].finish_reason}`
+      );
+    }
+
+    // Extract final text response
+    const finalResponse = message.content || "";
+
+    return {
+      response: finalResponse,
+      conversationHistory: [...messages, message],
+    };
+  }
+}
+
+/**
+ * Example Usage: AI-Powered DeFi Scenarios
+ */
+async function runDeFiAgent() {
+  // Initialize Zyfai MCP client
+  const zyfaiClient = await initializeZyfaiMCP();
+
+  // Create AI agent with Zyfai tools (using OpenAI)
+  const agent = new DeFiAIAgent(zyfaiClient, process.env.OPENAI_API_KEY!);
+  await agent.initialize();
+
+  // Scenario 1: Find best yield opportunities
+  console.log("\n🎯 Scenario 1: Finding best yields\n");
+  const result1 = await agent.chat(
+    "I have $10,000 USDC on Base chain. Find me the safest yield opportunities with at least 4% APY. Compare the top 3 options and recommend the best one considering TVL and historical performance."
+  );
+  console.log("🤖 Agent:", result1.response);
+
+  // Scenario 2: Portfolio analysis with multi-chain context
+  console.log("\n📊 Scenario 2: Portfolio Analysis\n");
+  const result2 = await agent.chat(
+    "Analyze the portfolio for wallet 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb across Base and Arbitrum. Calculate total earnings, identify underperforming positions, and suggest rebalancing strategies.",
+    result1.conversationHistory
+  );
+  console.log("🤖 Agent:", result2.response);
+
+  // Scenario 3: Degen vs Safe strategy recommendation
+  console.log("\n⚡ Scenario 3: Risk-based Strategy\n");
+  const result3 = await agent.chat(
+    "I'm willing to take high risks for potentially 20%+ APY. Show me degen strategies on Base, but warn me about the risks. Also compare this with the safest alternative so I understand the trade-offs.",
+    result2.conversationHistory
+  );
+  console.log("🤖 Agent:", result3.response);
+
+  // Scenario 4: Historical performance tracking
+  console.log("\n📈 Scenario 4: Performance Tracking\n");
+  const result4 = await agent.chat(
+    "For the same wallet, get the daily APY history for the last 30 days. Calculate the average APY and tell me if the performance is trending up or down. Should I consider moving funds?",
+    result3.conversationHistory
+  );
+  console.log("🤖 Agent:", result4.response);
+
+  // Scenario 5: Cross-chain opportunity discovery
+  console.log("\n🌉 Scenario 5: Cross-Chain Analysis\n");
+  const result5 = await agent.chat(
+    "Compare yield opportunities across Base, Arbitrum, and Plasma for stablecoin farming. Which chain currently offers the best risk-adjusted returns? Factor in gas costs and protocol safety.",
+    result4.conversationHistory
+  );
+  console.log("🤖 Agent:", result5.response);
+}
+
+// Run examples
+console.log("🚀 Starting AI DeFi Agent Examples...\n");
+
+runDeFiAgent()
+  .then(() => {
+    console.log("\n✅ All scenarios completed!");
+  })
+  .catch((error) => {
+    console.error("❌ Error:", error);
+  });
+```
+
+**Example Conversation:**
+
+```
+User: "I have 5000 USDC on Base. What's my best option?"
+
+Agent: *Calls get-safe-opportunities tool*
+       *Calls get-available-protocols tool*
+       *Analyzes results*
+
+Agent: "Based on current data, I recommend Aave V3 on Base:
+       - APY: 4.8% (stable over 30 days)
+       - TVL: $45M (high liquidity)
+       - Risk: Low (audited, established protocol)
+       - Expected monthly return: ~$20
+
+       Alternative: Compound offers 4.2% APY if you prefer even
+       more battle-tested protocols."
+
+User: "How has Aave performed historically?"
+
+Agent: *Calls get-daily-apy-history tool*
+       *Calls get-apy-per-strategy tool*
+
+Agent: "Aave on Base has shown consistent performance:
+       - 30-day average APY: 4.6%
+       - Lowest: 4.1%, Highest: 5.2%
+       - Trend: Stable with slight upward movement
+       - Active wallets: 2,847 (growing ecosystem)
+
+       This is a solid choice for stable, predictable yields."
+```
+
+For more advanced integrations, combine with direct [@zyfai/sdk](https://sdk.zyf.ai/) integration for transaction execution
 
 ## Getting Started
 
