@@ -88,12 +88,12 @@ zyfai-mcp-server/
 
 ## Client Integration
 
-## Using with Claude Code
+### Using with Claude Code
 
 If you'd like to add zyfai mcp server under your claude code, execute the below in a separate terminal, not under a claude code session
 
 ```
-claude mcp add --transport sse zyfai-defi https://mcp.zyf.ai/sse
+claude mcp add --transport sse zyfai-agent https://mcp.zyf.ai/sse
 ```
 
 ### Using with Claude Desktop
