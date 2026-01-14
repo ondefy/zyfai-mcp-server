@@ -122,6 +122,7 @@ EOF
 4. Configure environment variables:
 
 Get your ZYFAI_API_KEY from [Zyfai SDK Dashboard](https://sdk.zyf.ai/)
+
 **Note:** The server will start without an API key (shows a warning), but API calls will fail. Set `ZYFAI_API_KEY` in your `.env` file for full functionality.
 
 5. Build the project:
