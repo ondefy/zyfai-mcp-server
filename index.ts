@@ -1,5 +1,5 @@
 /**
- * Zyfai Rebalancing MCP Server
+ * Zyfai DeFi MCP Server
  * Main entry point - Modular architecture
  */
 
@@ -40,12 +40,22 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+
+// CORS configuration
 app.use(
   cors({
     origin: config.allowedOrigins,
     credentials: true,
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Mcp-Session-Id",
+      "Accept",
+    ],
+    exposedHeaders: ["Mcp-Session-Id"],
   })
 );
+
 app.use(requestLogger);
 
 // ============================================================================
@@ -53,7 +63,7 @@ app.use(requestLogger);
 // ============================================================================
 
 const server = new McpServer({
-  name: "zyfai-rebalancing-mcp",
+  name: "zyfai-defi-mcp",
   version: "1.0.0",
 });
 
@@ -82,15 +92,16 @@ async function main() {
     // Start Express server
     app.listen(config.port, config.host, () => {
       console.log(`\n${"=".repeat(60)}`);
-      console.log(`🚀 Zyfai Rebalancing MCP Server v1.0.0`);
+      console.log(`🚀 Zyfai DeFi MCP Server v1.0.0`);
       console.log(`${"=".repeat(60)}`);
       console.log(
         `\n📡 Server running on http://${config.host}:${config.port}`
       );
-      console.log(`🔌 SSE endpoint: http://${config.host}:${config.port}/sse`);
+      console.log(`🔌 MCP endpoint: http://${config.host}:${config.port}/mcp`);
       console.log(
         `💓 Health check: http://${config.host}:${config.port}/health`
       );
+      console.log(`\n📋 Transport: Streamable HTTP`);
       console.log(`\n🛠️  Available MCP Tools: 17`);
       console.log(`   - Portfolio Management: 2 tools`);
       console.log(`   - Opportunities: 3 tools`);
