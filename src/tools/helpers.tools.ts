@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { sessionApiKeys } from "../routes/http.routes.js";
 
 export function registerHelperTools(
   server: McpServer,
@@ -14,9 +15,10 @@ export function registerHelperTools(
     "get-user-details",
     "Get current authenticated user details including smart wallet, chains, protocols, etc. (Requires authentication)",
     {},
-    async () => {
+    async (_, { sessionId }) => {
       try {
-        const response = await zyfiApi.getUserDetails();
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getUserDetails(clientApiKey);
         return {
           content: [
             {

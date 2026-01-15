@@ -12,11 +12,24 @@ You can make use of the official Zyfai mcp server deployed [here](https://mcp.zy
 - **Analytics & Metrics** - Earnings, TVL, volume, and more
 - **Historical Data** - Transaction history and APY tracking
 - **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
+- **Dual Transport Support** - Both `/mcp` (Streamable HTTP) and `/sse` (SSE) endpoints
+- **Per-Client API Keys** - Pass your own Zyfai API key via `x-api-key` header
 - Express.js server with CORS support
 - Production-ready with PM2 process management
 - Comprehensive error handling & TypeScript
 - Built with [@modelcontextprotocol/sdk](https://modelcontextprotocol.io/) v1.25+
 - Powered by [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk)
+
+## Endpoints
+
+The server supports two transport endpoints:
+
+- **`/mcp`** - Streamable HTTP transport (modern, recommended)
+- **`/sse`** - SSE transport (backward compatibility)
+- **`/health`** - Health check endpoint
+- **`/`** - Server info
+
+Both `/mcp` and `/sse` support the `x-api-key` header for per-client API keys.
 
 ## Available Tools
 
@@ -87,17 +100,106 @@ zyfai-mcp-server/
 
 ## Client Integration
 
+### 🔑 Using Your Own API Key (Optional)
+
+**By default, the server uses its configured API key** (set via `ZYFAI_API_KEY` environment variable). This works fine for testing, but to access **your own users' wallet data**, you can provide your own Zyfai SDK API key.
+
+**Behavior:**
+
+- ✅ **No `x-api-key` header** → Uses server's API key (default)
+- ✅ **With `x-api-key` header** → Uses your API key (recommended for production)
+
+Get your API key: [Zyfai Dashboard](https://dashboard.zyf.ai) → Settings → API Keys
+
+#### Option 1: Pass API Key via HTTP Headers (Optional, for your own data)
+
+When connecting to the MCP server programmatically, you can optionally pass your API key via the `x-api-key` header. If omitted, the server's default API key is used:
+
+```typescript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+
+// Option A: With your own API key (recommended for production)
+const transport = new StreamableHTTPClientTransport(
+  new URL("https://mcp.zyf.ai/mcp"),
+  {
+    headers: {
+      "x-api-key": "your_zyfai_api_key_here", // Optional
+    },
+  }
+);
+
+// Option B: Without API key (uses server's default key)
+const transportDefault = new StreamableHTTPClientTransport(
+  new URL("https://mcp.zyf.ai/mcp")
+  // No headers needed - automatically uses server's API key
+);
+
+const client = new Client(
+  {
+    name: "my-defi-app",
+    version: "1.0.0",
+  },
+  { capabilities: {} }
+);
+
+await client.connect(transport);
+```
+
+#### Option 2: Use Server's Default API Key (Easiest)
+
+Simply connect without any headers - the server will use its configured API key:
+
+```typescript
+const transport = new StreamableHTTPClientTransport(
+  new URL("https://mcp.zyf.ai/mcp")
+);
+// That's it! Uses server's API key automatically
+```
+
+This works great for:
+
+- Testing and development
+- Shared team environments
+- When you want to use the server owner's wallet data
+
+#### Option 3: Self-Host with Your API Key
+
+For full control, self-host the MCP server with your API key:
+
+1. Clone and deploy this repo
+2. Set `ZYFAI_API_KEY=your_key` in your environment
+3. Point your client to your deployment (e.g., `http://localhost:3005/mcp`)
+
+See the **Local Development** section below for details.
+
 ### Using with Claude Code
 
 Add the Zyfai MCP server to Claude Code using the HTTP transport:
 
 ```bash
+# Using the hosted server (Zyfai team's API key)
 claude mcp add --transport http zyfai-agent https://mcp.zyf.ai/mcp
+
+# Or using your self-hosted server (your API key)
+claude mcp add --transport http zyfai-agent http://localhost:3005/mcp
 ```
 
 ### Using with Claude Desktop
 
-For **remote HTTP server**:
+**Option A: Self-hosted** (recommended to use your own API key):
+
+```json
+{
+  "mcpServers": {
+    "zyfai-defi": {
+      "url": "http://localhost:3005/mcp"
+    }
+  }
+}
+```
+
+**Option B: Hosted server** (uses Zyfai team's API key):
 
 ```json
 {
@@ -109,13 +211,31 @@ For **remote HTTP server**:
 }
 ```
 
+Or using the SSE endpoint (backward compatibility):
+
+```json
+{
+  "mcpServers": {
+    "zyfai-defi": {
+      "url": "https://mcp.zyf.ai/sse"
+    }
+  }
+}
+```
+
 ### Using with Cursor / Other MCP Clients
 
 Most MCP clients support HTTP transport natively. Simply point to the `/mcp` endpoint:
 
 ```
+# Hosted (Zyfai team's data)
 https://mcp.zyf.ai/mcp
+
+# Self-hosted (your data)
+http://localhost:3005/mcp
 ```
+
+**For programmatic access with your own API key**, see the example above under "Pass API Key via HTTP Headers".
 
 ### Testing with MCP Inspector
 
@@ -157,8 +277,18 @@ import OpenAI from "openai";
  * Initialize Zyfai MCP Client using Streamable HTTP Transport
  */
 async function initializeZyfaiMCP() {
+  // Both endpoints work: /mcp (Streamable HTTP) or /sse (SSE)
   const transport = new StreamableHTTPClientTransport(
-    new URL("https://mcp.zyf.ai/mcp")
+    new URL("https://mcp.zyf.ai/mcp"), // or use /sse for backward compatibility
+    // Optional: Pass your own API key to access YOUR users' data
+    // If omitted, uses server's default API key
+    process.env.ZYFAI_API_KEY
+      ? {
+          headers: {
+            "x-api-key": process.env.ZYFAI_API_KEY,
+          },
+        }
+      : undefined
   );
 
   const client = new Client(

@@ -12,6 +12,9 @@ const router = Router();
 // Store active transports by session ID for stateful mode
 const transports = new Map<string, StreamableHTTPServerTransport>();
 
+// Store API keys by session ID (for client-provided keys)
+export const sessionApiKeys = new Map<string, string>();
+
 /**
  * Setup HTTP routes with Streamable HTTP Transport
  */
@@ -71,8 +74,16 @@ export function setupRoutes(server: McpServer) {
   router.all("/mcp", async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
+    // Extract client's API key from headers (if provided)
+    const clientApiKey = req.headers["x-api-key"] as string | undefined;
+
     // Handle existing session
     if (sessionId && transports.has(sessionId)) {
+      // Update API key for this session if provided
+      if (clientApiKey && sessionId) {
+        sessionApiKeys.set(sessionId, clientApiKey);
+      }
+
       const transport = transports.get(sessionId)!;
       await transport.handleRequest(req, res, req.body);
       return;
@@ -101,10 +112,19 @@ export function setupRoutes(server: McpServer) {
         if (newSessionId) {
           transports.set(newSessionId, transport);
 
+          // Store client's API key for this session (if provided)
+          if (clientApiKey) {
+            sessionApiKeys.set(newSessionId, clientApiKey);
+            console.log(
+              `[MCP] Client API key registered for session: ${newSessionId}`
+            );
+          }
+
           // Clean up on close
           transport.onclose = () => {
             if (newSessionId) {
               transports.delete(newSessionId);
+              sessionApiKeys.delete(newSessionId);
               console.log(`[MCP] Session closed: ${newSessionId}`);
             }
           };
@@ -168,23 +188,114 @@ export function setupRoutes(server: McpServer) {
   });
 
   // ============================================================================
-  // Legacy SSE endpoint (for backward compatibility)
-  // Redirects to the new /mcp endpoint
+  // SSE endpoint (for backward compatibility with existing clients)
   // ============================================================================
 
-  router.get("/sse", (req: Request, res: Response) => {
-    res.status(301).json({
-      message: "SSE transport is deprecated. Please use /mcp endpoint instead.",
-      newEndpoint: "/mcp",
-      documentation: "https://modelcontextprotocol.io/specification/2025-11-25",
+  /**
+   * SSE endpoint handler - works alongside Streamable HTTP
+   * Maintains compatibility with clients using the old SSE transport
+   */
+  router.all("/sse", async (req: Request, res: Response) => {
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+    // Extract client's API key from headers (if provided)
+    const clientApiKey = req.headers["x-api-key"] as string | undefined;
+
+    // Handle existing session
+    if (sessionId && transports.has(sessionId)) {
+      // Update API key for this session if provided
+      if (clientApiKey && sessionId) {
+        sessionApiKeys.set(sessionId, clientApiKey);
+      }
+
+      const transport = transports.get(sessionId)!;
+      await transport.handleRequest(req, res, req.body);
+      return;
+    }
+
+    // For new sessions or initialization requests
+    if (req.method === "POST" || req.method === "GET") {
+      // Check if this is an initialization request
+      const body = req.body;
+      const isInitRequest =
+        body?.method === "initialize" ||
+        (Array.isArray(body) &&
+          body.some((msg) => msg.method === "initialize"));
+
+      if (isInitRequest || !sessionId) {
+        // Create new transport for initialization
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+        });
+
+        // Connect the MCP server to this transport
+        await server.connect(transport);
+
+        // Store the transport for future requests
+        const newSessionId = transport.sessionId;
+        if (newSessionId) {
+          transports.set(newSessionId, transport);
+
+          // Store client's API key for this session (if provided)
+          if (clientApiKey) {
+            sessionApiKeys.set(newSessionId, clientApiKey);
+            console.log(
+              `[MCP SSE] Client API key registered for session: ${newSessionId}`
+            );
+          }
+
+          // Clean up on close
+          transport.onclose = () => {
+            if (newSessionId) {
+              transports.delete(newSessionId);
+              sessionApiKeys.delete(newSessionId);
+              console.log(`[MCP SSE] Session closed: ${newSessionId}`);
+            }
+          };
+
+          console.log(`[MCP SSE] New session created: ${newSessionId}`);
+        }
+
+        // Handle the request
+        await transport.handleRequest(req, res, req.body);
+        return;
+      }
+    }
+
+    // No valid session
+    res.status(400).json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32600,
+        message:
+          "Bad Request: No valid session. Send an initialize request first.",
+      },
+      id: null,
     });
   });
 
-  router.post("/messages", (req: Request, res: Response) => {
-    res.status(301).json({
-      message: "This endpoint is deprecated. Please use /mcp endpoint instead.",
-      newEndpoint: "/mcp",
-      documentation: "https://modelcontextprotocol.io/specification/2025-11-25",
+  router.post("/messages", async (req: Request, res: Response) => {
+    // Redirect to /sse endpoint for backward compatibility
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    const clientApiKey = req.headers["x-api-key"] as string | undefined;
+
+    if (sessionId && transports.has(sessionId)) {
+      if (clientApiKey && sessionId) {
+        sessionApiKeys.set(sessionId, clientApiKey);
+      }
+      const transport = transports.get(sessionId)!;
+      await transport.handleRequest(req, res, req.body);
+      return;
+    }
+
+    res.status(400).json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32600,
+        message:
+          "Bad Request: No valid session. Please initialize via /sse first.",
+      },
+      id: null,
     });
   });
 
@@ -206,6 +317,7 @@ export function setupRoutes(server: McpServer) {
     if (transport) {
       transport.close();
       transports.delete(sessionId);
+      sessionApiKeys.delete(sessionId); // Clean up API key
       console.log(`[MCP] Session deleted: ${sessionId}`);
       res.status(200).json({ status: "deleted" });
     } else {
@@ -224,7 +336,7 @@ export function setupRoutes(server: McpServer) {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Mcp-Session-Id, Accept"
+      "Content-Type, Authorization, Mcp-Session-Id, x-api-key, Accept"
     );
     res.status(200).end();
   });

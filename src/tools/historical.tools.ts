@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { sessionApiKeys } from "../routes/http.routes.js";
 
 export function registerHistoricalTools(
   server: McpServer,
@@ -34,14 +35,15 @@ export function registerHistoricalTools(
         .optional()
         .describe("Optional end date in YYYY-MM-DD format"),
     },
-    async ({ walletAddress, chainId, limit, offset, fromDate, toDate }) => {
+    async ({ walletAddress, chainId, limit, offset, fromDate, toDate }, { sessionId }) => {
       try {
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
         const response = await zyfiApi.getHistory(walletAddress, chainId, {
           limit,
           offset,
           fromDate,
           toDate,
-        });
+        }, clientApiKey);
         return {
           content: [
             {
@@ -77,8 +79,9 @@ export function registerHistoricalTools(
         .default("7D")
         .describe("Period: '7D', '14D', or '30D' (default: '7D')"),
     },
-    async ({ walletAddress, days }) => {
+    async ({ walletAddress, days }, { sessionId }) => {
       try {
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
         const response = await zyfiApi.getDailyApyHistory(
           walletAddress,
           days || "7D"
@@ -118,9 +121,10 @@ export function registerHistoricalTools(
           "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
-    async ({ walletAddress, chainId }) => {
+    async ({ walletAddress, chainId }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getFirstTopup(walletAddress, chainId);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getFirstTopup(walletAddress, chainId, clientApiKey);
         return {
           content: [
             {

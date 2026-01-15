@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { sessionApiKeys } from "../routes/http.routes.js";
 
 export function registerAnalyticsTools(
   server: McpServer,
@@ -18,9 +19,10 @@ export function registerAnalyticsTools(
         .string()
         .describe("The smart wallet address to get earnings for"),
     },
-    async ({ walletAddress }) => {
+    async ({ walletAddress }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getOnchainEarnings(walletAddress);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getOnchainEarnings(walletAddress, clientApiKey);
         return {
           content: [
             {
@@ -53,9 +55,10 @@ export function registerAnalyticsTools(
         .string()
         .describe("The smart wallet address to calculate earnings for"),
     },
-    async ({ walletAddress }) => {
+    async ({ walletAddress }, { sessionId }) => {
       try {
-        const response = await zyfiApi.calculateOnchainEarnings(walletAddress);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.calculateOnchainEarnings(walletAddress, clientApiKey);
         return {
           content: [
             {
@@ -93,12 +96,14 @@ export function registerAnalyticsTools(
         .describe("Start date in YYYY-MM-DD format"),
       endDate: z.string().optional().describe("End date in YYYY-MM-DD format"),
     },
-    async ({ walletAddress, startDate, endDate }) => {
+    async ({ walletAddress, startDate, endDate }, { sessionId }) => {
       try {
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
         const response = await zyfiApi.getDailyEarnings(
           walletAddress,
           startDate,
-          endDate
+          endDate,
+          clientApiKey
         );
         return {
           content: [
@@ -128,9 +133,10 @@ export function registerAnalyticsTools(
     "get-tvl",
     "Get total value locked (TVL) across all Zyfai accounts",
     {},
-    async () => {
+    async (_, { sessionId }) => {
       try {
-        const response = await zyfiApi.getTVL();
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getTVL(clientApiKey);
         return {
           content: [
             {
@@ -159,9 +165,10 @@ export function registerAnalyticsTools(
     "get-volume",
     "Get total volume across all Zyfai accounts",
     {},
-    async () => {
+    async (_, { sessionId }) => {
       try {
-        const response = await zyfiApi.getVolume();
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getVolume(clientApiKey);
         return {
           content: [
             {
@@ -196,9 +203,10 @@ export function registerAnalyticsTools(
           "Chain ID to filter wallets (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
-    async ({ chainId }) => {
+    async ({ chainId }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getActiveWallets(chainId);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getActiveWallets(chainId, clientApiKey);
         return {
           content: [
             {
@@ -231,9 +239,10 @@ export function registerAnalyticsTools(
         .string()
         .describe("The EOA (externally owned account) address"),
     },
-    async ({ eoaAddress }) => {
+    async ({ eoaAddress }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getSmartWalletByEOA(eoaAddress);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getSmartWalletByEOA(eoaAddress, clientApiKey);
         return {
           content: [
             {
@@ -264,9 +273,10 @@ export function registerAnalyticsTools(
     {
       walletAddress: z.string().describe("The smart wallet address"),
     },
-    async ({ walletAddress }) => {
+    async ({ walletAddress }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getRebalanceFrequency(walletAddress);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getRebalanceFrequency(walletAddress, clientApiKey);
         return {
           content: [
             {
@@ -313,12 +323,14 @@ export function registerAnalyticsTools(
         .default("safe")
         .describe("Strategy type: 'safe' or 'degen'"),
     },
-    async ({ crossChain, days, strategy }) => {
+    async ({ crossChain, days, strategy }, { sessionId }) => {
       try {
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
         const response = await zyfiApi.getAPYPerStrategy(
           crossChain || false,
           days || 7,
-          strategy || "safe"
+          strategy || "safe",
+          clientApiKey
         );
         return {
           content: [

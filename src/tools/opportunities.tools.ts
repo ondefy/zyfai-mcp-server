@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { sessionApiKeys } from "../routes/http.routes.js";
 
 export function registerOpportunitiesTools(
   server: McpServer,
@@ -21,9 +22,10 @@ export function registerOpportunitiesTools(
           "Optional chain ID to filter opportunities (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
-    async ({ chainId }) => {
+    async ({ chainId }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getSafeOpportunities(chainId);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getSafeOpportunities(chainId, clientApiKey);
         return {
           content: [
             {
@@ -59,9 +61,10 @@ export function registerOpportunitiesTools(
           "Optional chain ID to filter strategies (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
-    async ({ chainId }) => {
+    async ({ chainId }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getDegenStrategies(chainId);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getDegenStrategies(chainId, clientApiKey);
         return {
           content: [
             {
@@ -96,9 +99,10 @@ export function registerOpportunitiesTools(
           "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
-    async ({ chainId }) => {
+    async ({ chainId }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getAvailableProtocols(chainId);
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        const response = await zyfiApi.getAvailableProtocols(chainId, clientApiKey);
         return {
           content: [
             {

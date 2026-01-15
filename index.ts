@@ -50,6 +50,7 @@ app.use(
       "Content-Type",
       "Authorization",
       "Mcp-Session-Id",
+      "x-api-key",
       "Accept",
     ],
     exposedHeaders: ["Mcp-Session-Id"],

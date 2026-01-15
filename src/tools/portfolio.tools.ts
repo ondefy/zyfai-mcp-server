@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { sessionApiKeys } from "../routes/http.routes.js";
 
 export function registerPortfolioTools(
   server: McpServer,
@@ -18,9 +19,12 @@ export function registerPortfolioTools(
         .string()
         .describe("The wallet address to fetch multi-chain portfolio for"),
     },
-    async ({ walletAddress }) => {
+    async ({ walletAddress }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getDebankPortfolio(walletAddress);
+        // Get client's API key from session (if provided)
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        
+        const response = await zyfiApi.getDebankPortfolio(walletAddress, clientApiKey);
         return {
           content: [
             {
@@ -59,9 +63,12 @@ export function registerPortfolioTools(
           "Optional chain ID to filter positions (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
         ),
     },
-    async ({ userAddress, chainId }) => {
+    async ({ userAddress, chainId }, { sessionId }) => {
       try {
-        const response = await zyfiApi.getPositions(userAddress, chainId);
+        // Get client's API key from session (if provided)
+        const clientApiKey = sessionId ? sessionApiKeys.get(sessionId) : undefined;
+        
+        const response = await zyfiApi.getPositions(userAddress, chainId, clientApiKey);
         return {
           content: [
             {
