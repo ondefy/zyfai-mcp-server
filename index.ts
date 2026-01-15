@@ -3,6 +3,10 @@
  * Main entry point - Modular architecture
  */
 
+// Load environment variables FIRST (before anything else)
+import dotenv from "dotenv";
+dotenv.config();
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import express from "express";
 import cors from "cors";
