@@ -1,6 +1,6 @@
 # Zyfai DeFi MCP Server
 
-A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports HTTP/SSE transport with complete portfolio management, analytics, and DeFi opportunities discovery.
+A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) using the **Streamable HTTP transport** with complete portfolio management, analytics, and DeFi opportunities discovery.
 
 You can make use of the official Zyfai mcp server deployed [here](https://mcp.zyf.ai) or run your own.
 
@@ -12,11 +12,10 @@ You can make use of the official Zyfai mcp server deployed [here](https://mcp.zy
 - **Analytics & Metrics** - Earnings, TVL, volume, and more
 - **Historical Data** - Transaction history and APY tracking
 - **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
-- HTTP/SSE transport for web-accessible endpoints
 - Express.js server with CORS support
 - Production-ready with PM2 process management
 - Comprehensive error handling & TypeScript
-- Built with [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
+- Built with [@modelcontextprotocol/sdk](https://modelcontextprotocol.io/) v1.25+
 - Powered by [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk)
 
 ## Available Tools
@@ -58,7 +57,7 @@ You can make use of the official Zyfai mcp server deployed [here](https://mcp.zy
 
 ```
 zyfai-mcp-server/
-├── index.ts                              # Main HTTP/SSE server entry point
+├── index.ts                              # Main HTTP server entry point (Streamable HTTP)
 ├── index-stdio.ts                        # STDIO server for Claude Desktop
 ├── src/
 │   ├── config/
@@ -67,15 +66,15 @@ zyfai-mcp-server/
 │   │   └── zyfai-api.service.ts          # Zyfai SDK wrapper service
 │   ├── tools/
 │   │   ├── index.ts                      # Tool registration
-│   │   ├── portfolio.tools.ts             # Portfolio tools (2 tools)
+│   │   ├── portfolio.tools.ts            # Portfolio tools (2 tools)
 │   │   ├── opportunities.tools.ts        # Opportunities tools (3 tools)
-│   │   ├── analytics.tools.ts             # Analytics tools (8 tools)
+│   │   ├── analytics.tools.ts            # Analytics tools (8 tools)
 │   │   ├── historical.tools.ts           # Historical data tools (3 tools)
 │   │   └── helpers.tools.ts              # Helper tools (1 tool)
 │   ├── routes/
-│   │   └── http.routes.ts                # HTTP/SSE routes
+│   │   └── http.routes.ts                # Streamable HTTP routes
 │   ├── middleware/
-│   │   └── index.ts                       # Middleware (logger, error handler)
+│   │   └── index.ts                      # Middleware (logger, error handler)
 │   └── types/
 │       └── zyfai-api.types.ts            # TypeScript type definitions
 ├── package.json                          # Project dependencies
@@ -90,40 +89,43 @@ zyfai-mcp-server/
 
 ### Using with Claude Code
 
-If you'd like to add zyfai mcp server under your claude code, execute the below in a separate terminal, not under a claude code session
+Add the Zyfai MCP server to Claude Code using the HTTP transport:
 
-```
-claude mcp add --transport sse zyfai-agent https://mcp.zyf.ai/sse
+```bash
+claude mcp add --transport http zyfai-agent https://mcp.zyf.ai/mcp
 ```
 
 ### Using with Claude Desktop
 
-For **remote HTTP/SSE server** :
+For **remote HTTP server**:
 
 ```json
 {
   "mcpServers": {
     "zyfai-defi": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://mcp.zyf.ai/sse"]
+      "url": "https://mcp.zyf.ai/mcp"
     }
   }
 }
 ```
 
-### Using with Web Applications
+### Using with Cursor / Other MCP Clients
 
-The server uses SSE (Server-Sent Events) transport, making it accessible from web browsers and HTTP clients:
+Most MCP clients support HTTP transport natively. Simply point to the `/mcp` endpoint:
 
-```javascript
-// Example: Connecting to the MCP server
-const sseUrl = "https://mcp.zyf.ai/sse";
-const eventSource = new EventSource(sseUrl);
-
-eventSource.onmessage = (event) => {
-  console.log("Received:", event.data);
-};
 ```
+https://mcp.zyf.ai/mcp
+```
+
+### Testing with MCP Inspector
+
+You can test the server using the official MCP Inspector:
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+Then enter the endpoint URL: `https://mcp.zyf.ai/mcp`
 
 ### Building LLM-Powered DeFi Apps with Zyfai MCP
 
@@ -148,14 +150,16 @@ This example shows how to build an LLM agent that uses Zyfai MCP server to creat
 
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import OpenAI from "openai";
 
 /**
- * Initialize Zyfai MCP Client
+ * Initialize Zyfai MCP Client using Streamable HTTP Transport
  */
 async function initializeZyfaiMCP() {
-  const transport = new SSEClientTransport(new URL("https://mcp.zyf.ai/sse"));
+  const transport = new StreamableHTTPClientTransport(
+    new URL("https://mcp.zyf.ai/mcp")
+  );
 
   const client = new Client(
     {
@@ -448,7 +452,7 @@ pnpm start
 The server will be running at:
 
 - Main endpoint: `http://localhost:3005/`
-- SSE endpoint: `http://localhost:3005/sse`
+- MCP endpoint: `http://localhost:3005/mcp`
 - Health check: `http://localhost:3005/health`
 
 ### Development Mode
@@ -473,13 +477,13 @@ Configure your server using environment variables:
 ## Available Scripts
 
 - `pnpm run build` - Compile TypeScript to JavaScript
-- `pnpm start` - Start the production HTTP/SSE server (`build/index.js`)
+- `pnpm start` - Start the production HTTP server (`build/index.js`)
 - `pnpm run dev` - Build and start in development mode
 - `pnpm run clean` - Clean build directory
 
 **Note:** The project includes both:
 
-- `index.ts` - HTTP/SSE server for web/remote access
+- `index.ts` - Streamable HTTP server for web/remote access
 - `index-stdio.ts` - STDIO server for Claude Desktop (local)
 
 ## Contributing

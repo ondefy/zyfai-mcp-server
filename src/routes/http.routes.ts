@@ -1,19 +1,19 @@
 /**
- * HTTP Routes - Optimized for Fast SSE Response
- * Fixes timeout issues by immediately sending endpoint event
+ * HTTP Routes - Using Streamable HTTP Transport
  */
 
 import { Router, Request, Response } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { randomUUID } from "crypto";
 
 const router = Router();
 
-// Store active transports by session ID
-const transports = new Map<string, SSEServerTransport>();
+// Store active transports by session ID for stateful mode
+const transports = new Map<string, StreamableHTTPServerTransport>();
 
 /**
- * Setup HTTP routes
+ * Setup HTTP routes with Streamable HTTP Transport
  */
 export function setupRoutes(server: McpServer) {
   // Health check endpoint
@@ -23,7 +23,7 @@ export function setupRoutes(server: McpServer) {
       service: "zyfai-rebalancing-mcp",
       version: "1.0.0",
       timestamp: new Date().toISOString(),
-      protocol: "HTTP+SSE (optimized)",
+      protocol: "Streamable HTTP",
       tools: {
         portfolio: 2,
         opportunities: 3,
@@ -35,17 +35,17 @@ export function setupRoutes(server: McpServer) {
     });
   });
 
-  // Root endpoint
+  // Root endpoint - Server info
   router.get("/", (req: Request, res: Response) => {
     res.status(200).json({
-      message: "Zyfai Rebalancing MCP Server",
+      message: "Zyfai DeFi MCP Server",
       version: "1.0.0",
       description:
         "MCP server providing access to Zyfai DeFi APIs for portfolio management, rebalancing, and opportunities discovery",
+      transport: "Streamable HTTP",
       endpoints: {
         health: "/health",
-        sse: "/sse",
-        messages: "/messages",
+        mcp: "/mcp",
       },
       tools: {
         categories: [
@@ -61,102 +61,156 @@ export function setupRoutes(server: McpServer) {
   });
 
   // ============================================================================
-  // Optimized SSE endpoint - Sends endpoint event IMMEDIATELY
+  // Streamable HTTP MCP Endpoint
   // ============================================================================
 
   /**
-   * GET /sse - SSE endpoint with immediate response
-   * Key fix: Send endpoint event before awaiting server.connect()
+   * Handle all MCP requests at /mcp endpoint
+   * Supports both GET (for SSE streaming) and POST (for messages)
    */
-  router.get("/sse", async (req: Request, res: Response) => {
-    console.log(`[SSE] New connection request`);
+  router.all("/mcp", async (req: Request, res: Response) => {
+    const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-    const transport = new SSEServerTransport("/messages", res);
-    const sessionId = transport.sessionId;
+    // Handle existing session
+    if (sessionId && transports.has(sessionId)) {
+      const transport = transports.get(sessionId)!;
+      await transport.handleRequest(req, res, req.body);
+      return;
+    }
 
-    console.log(`[SSE] Session created: ${sessionId}`);
+    // For new sessions or initialization requests
+    if (req.method === "POST") {
+      // Check if this is an initialization request
+      const body = req.body;
+      const isInitRequest =
+        body?.method === "initialize" ||
+        (Array.isArray(body) &&
+          body.some((msg) => msg.method === "initialize"));
 
-    transports.set(sessionId, transport);
+      if (isInitRequest || !sessionId) {
+        // Create new transport for initialization
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID(),
+        });
 
-    res.on("close", () => {
-      console.log(`[SSE] Connection closed: ${sessionId}`);
-      transports.delete(sessionId);
+        // Connect the MCP server to this transport
+        await server.connect(transport);
+
+        // Store the transport for future requests
+        const newSessionId = transport.sessionId;
+        if (newSessionId) {
+          transports.set(newSessionId, transport);
+
+          // Clean up on close
+          transport.onclose = () => {
+            if (newSessionId) {
+              transports.delete(newSessionId);
+              console.log(`[MCP] Session closed: ${newSessionId}`);
+            }
+          };
+
+          console.log(`[MCP] New session created: ${newSessionId}`);
+        }
+
+        // Handle the request
+        await transport.handleRequest(req, res, req.body);
+        return;
+      }
+
+      // Non-initialization request without valid session
+      res.status(400).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32600,
+          message:
+            "Bad Request: No valid session. Send an initialize request first.",
+        },
+        id: null,
+      });
+      return;
+    }
+
+    // GET requests for SSE streaming need a session
+    if (req.method === "GET") {
+      if (!sessionId) {
+        res.status(400).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32600,
+            message: "Bad Request: Session ID required for GET requests.",
+          },
+          id: null,
+        });
+        return;
+      }
+
+      // Session not found
+      res.status(404).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32001,
+          message: "Session not found. Please initialize a new session.",
+        },
+        id: null,
+      });
+      return;
+    }
+
+    // Unsupported method
+    res.status(405).json({
+      jsonrpc: "2.0",
+      error: {
+        code: -32600,
+        message: `Method ${req.method} not allowed. Use GET or POST.`,
+      },
+      id: null,
     });
-
-    await server.connect(transport);
-
-    console.log(`[SSE] Transport connected: ${sessionId}`);
   });
 
   // ============================================================================
-  // Message endpoint - Handles client messages
+  // Legacy SSE endpoint (for backward compatibility)
+  // Redirects to the new /mcp endpoint
   // ============================================================================
 
-  /**
-   * POST /messages - Receives messages for a session
-   */
-  router.post("/messages", async (req: Request, res: Response) => {
-      const sessionId = req.query.sessionId as string;
+  router.get("/sse", (req: Request, res: Response) => {
+    res.status(301).json({
+      message: "SSE transport is deprecated. Please use /mcp endpoint instead.",
+      newEndpoint: "/mcp",
+      documentation: "https://modelcontextprotocol.io/specification/2025-11-25",
+    });
+  });
 
-      if (!sessionId) {
-        return res.status(400).json({
-          error: "Missing sessionId",
-          message: "sessionId query parameter is required",
-        });
-      }
+  router.post("/messages", (req: Request, res: Response) => {
+    res.status(301).json({
+      message: "This endpoint is deprecated. Please use /mcp endpoint instead.",
+      newEndpoint: "/mcp",
+      documentation: "https://modelcontextprotocol.io/specification/2025-11-25",
+    });
+  });
 
-      console.log(`[Messages] Received for session: ${sessionId}`);
+  // ============================================================================
+  // Session management endpoint
+  // ============================================================================
 
-      // Get transport
-      const transport = transports.get(sessionId);
-
-      if (!transport) {
-        console.error(`[Messages] Session not found: ${sessionId}`);
-        return res.status(404).json({
-          error: "Session not found",
-          message: `No active session found for ID: ${sessionId}`,
-        });
-      }
-
-      // Forward the message to the transport for processing
-      try {
-        await transport.handlePostMessage(req, res, req.body);
-      } catch (error) {
-        console.error(`[Messages] Error for session ${sessionId}:`, error);
-
-        if (!res.headersSent) {
-          res.status(500).json({
-            error: "Internal server error",
-            message: error instanceof Error ? error.message : "Unknown error",
-          });
-        }
-      }
-    }
-  );
-
-  /**
-   * DELETE /messages - Cleanup session
-   */
-  router.delete("/messages", (req: Request, res: Response) => {
-    const sessionId = req.query.sessionId as string;
+  router.delete("/mcp", (req: Request, res: Response) => {
+    const sessionId = req.headers["mcp-session-id"] as string;
 
     if (!sessionId) {
-      return res.status(400).json({
-        error: "Missing sessionId",
-        message: "sessionId query parameter is required",
+      res.status(400).json({
+        error: "Missing Mcp-Session-Id header",
       });
+      return;
     }
 
-    console.log(`[Delete] Cleaning up session: ${sessionId}`);
-
-    const deleted = transports.delete(sessionId);
-
-    if (deleted) {
+    const transport = transports.get(sessionId);
+    if (transport) {
+      transport.close();
+      transports.delete(sessionId);
+      console.log(`[MCP] Session deleted: ${sessionId}`);
       res.status(200).json({ status: "deleted" });
     } else {
       res.status(404).json({
         error: "Session not found",
-        message: `No active session found for ID: ${sessionId}`,
       });
     }
   });
@@ -170,7 +224,7 @@ export function setupRoutes(server: McpServer) {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
+      "Content-Type, Authorization, Mcp-Session-Id, Accept"
     );
     res.status(200).end();
   });
