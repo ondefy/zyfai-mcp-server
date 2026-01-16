@@ -1,6 +1,6 @@
 # Zyfai DeFi MCP Server 🛠️
 
-A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports HTTP/SSE transport with complete portfolio management, analytics, and DeFi opportunities discovery.
+A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports **Streamable HTTP** transport (MCP 2024-11-05+) with complete portfolio management, analytics, and DeFi opportunities discovery.
 
 You can make use of the official Zyfai mcp server deployed [here](https://mcp.zyf.ai) or run your own.
 
@@ -12,12 +12,30 @@ You can make use of the official Zyfai mcp server deployed [here](https://mcp.zy
 - ✅ **Analytics & Metrics** - Earnings, TVL, volume, and more
 - ✅ **Historical Data** - Transaction history and APY tracking
 - ✅ **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
-- ✅ HTTP/SSE transport for web-accessible endpoints
+- ✅ **Streamable HTTP transport** - Modern unified `/mcp` endpoint (MCP 2024-11-05+)
+- ✅ Session-based with `Mcp-Session-Id` header support
 - ✅ Express.js server with CORS support
 - ✅ Production-ready with PM2 process management
 - ✅ Comprehensive error handling & TypeScript
 - ✅ Built with [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
 - ✅ Powered by [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk)
+
+## Transport Update: SSE → Streamable HTTP
+
+This server has been updated from the deprecated SSE transport to **Streamable HTTP** (MCP specification 2024-11-05+):
+
+| Old (Deprecated)                              | New (Current)                               |
+| --------------------------------------------- | ------------------------------------------- |
+| `/sse` (GET) + `/messages` (POST)             | `/mcp` (unified endpoint)                   |
+| Separate endpoints for streaming and messages | Single endpoint handles all operations      |
+| Session managed via query params              | Session managed via `Mcp-Session-Id` header |
+
+### Benefits of Streamable HTTP
+
+- **Simpler architecture**: Single unified endpoint for all MCP operations
+- **Better infrastructure compatibility**: Works well with proxies, CDNs, and HTTP/2
+- **Enhanced resumability**: Better error handling and session recovery
+- **Stateless option**: Servers can operate statelessly if desired
 
 ## Available Tools
 
@@ -58,8 +76,9 @@ You can make use of the official Zyfai mcp server deployed [here](https://mcp.zy
 
 ```
 zyfai-mcp-server/
-├── index.ts                              # Main HTTP/SSE server entry point
+├── index.ts                              # Main Streamable HTTP server entry point
 ├── index-stdio.ts                        # STDIO server for Claude Desktop
+├── proxy-server.ts                       # Proxy for remote Streamable HTTP server
 ├── src/
 │   ├── config/
 │   │   └── env.ts                        # Environment configuration
@@ -73,7 +92,7 @@ zyfai-mcp-server/
 │   │   ├── historical.tools.ts           # Historical data tools (3 tools)
 │   │   └── helpers.tools.ts              # Helper tools (1 tool)
 │   ├── routes/
-│   │   └── http.routes.ts                # HTTP/SSE routes
+│   │   └── http.routes.ts                # Streamable HTTP routes
 │   ├── middleware/
 │   │   └── index.ts                       # Middleware (logger, error handler)
 │   └── types/
@@ -90,22 +109,38 @@ zyfai-mcp-server/
 
 ### Using with Claude Code
 
-If you'd like to add zyfai mcp server under your claude code, execute the below in a separate terminal, not under a claude code session
+If you'd like to add zyfai mcp server under your claude code, execute the below in a separate terminal, not under a claude code session:
 
-```
-claude mcp add --transport sse zyfai-agent https://mcp.zyf.ai/sse
+```bash
+# Using Streamable HTTP transport (recommended)
+claude mcp add --transport http zyfai-agent https://mcp.zyf.ai/mcp
 ```
 
 ### Using with Claude Desktop
 
-For **remote HTTP/SSE server** :
+For **remote Streamable HTTP server**:
 
 ```json
 {
   "mcpServers": {
     "zyfai-defi": {
       "command": "npx",
-      "args": ["mcp-remote", "https://mcp.zyf.ai/sse"]
+      "args": ["mcp-remote", "https://mcp.zyf.ai/mcp"]
+    }
+  }
+}
+```
+
+### Using with Cursor
+
+Add to your Cursor MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "zyfai-defi": {
+      "url": "https://mcp.zyf.ai/mcp",
+      "transport": "http"
     }
   }
 }
@@ -113,16 +148,36 @@ For **remote HTTP/SSE server** :
 
 ### Using with Web Applications
 
-The server uses SSE (Server-Sent Events) transport, making it accessible from web browsers and HTTP clients:
+The server uses Streamable HTTP transport, making it accessible from web browsers and HTTP clients:
 
-```javascript
-// Example: Connecting to the MCP server
-const sseUrl = "https://mcp.zyf.ai/sse";
-const eventSource = new EventSource(sseUrl);
+```typescript
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
-eventSource.onmessage = (event) => {
-  console.log("Received:", event.data);
-};
+// Initialize MCP client with Streamable HTTP transport
+const transport = new StreamableHTTPClientTransport(
+  new URL("https://mcp.zyf.ai/mcp")
+);
+
+const client = new Client(
+  { name: "my-app", version: "1.0.0" },
+  { capabilities: {} }
+);
+
+await client.connect(transport);
+
+// List available tools
+const tools = await client.listTools();
+console.log(
+  "Available tools:",
+  tools.tools.map((t) => t.name)
+);
+
+// Call a tool
+const result = await client.callTool({
+  name: "get-safe-opportunities",
+  arguments: { chainId: 8453, limit: 5 },
+});
 ```
 
 ### Building LLM-Powered DeFi Apps with Zyfai MCP
@@ -148,14 +203,16 @@ This example shows how to build an LLM agent that uses Zyfai MCP server to creat
 
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import OpenAI from "openai";
 
 /**
- * Initialize Zyfai MCP Client
+ * Initialize Zyfai MCP Client with Streamable HTTP
  */
 async function initializeZyfaiMCP() {
-  const transport = new SSEClientTransport(new URL("https://mcp.zyf.ai/sse"));
+  const transport = new StreamableHTTPClientTransport(
+    new URL("https://mcp.zyf.ai/mcp")
+  );
 
   const client = new Client(
     {
@@ -168,7 +225,7 @@ async function initializeZyfaiMCP() {
   );
 
   await client.connect(transport);
-  console.log("✅ Connected to Zyfai MCP Server");
+  console.log("✅ Connected to Zyfai MCP Server (Streamable HTTP)");
 
   return client;
 }
@@ -322,30 +379,6 @@ async function runDeFiAgent() {
     result1.conversationHistory
   );
   console.log("🤖 Agent:", result2.response);
-
-  // Scenario 3: Degen vs Safe strategy recommendation
-  console.log("\n⚡ Scenario 3: Risk-based Strategy\n");
-  const result3 = await agent.chat(
-    "I'm willing to take high risks for potentially 20%+ APY. Show me degen strategies on Base, but warn me about the risks. Also compare this with the safest alternative so I understand the trade-offs.",
-    result2.conversationHistory
-  );
-  console.log("🤖 Agent:", result3.response);
-
-  // Scenario 4: Historical performance tracking
-  console.log("\n📈 Scenario 4: Performance Tracking\n");
-  const result4 = await agent.chat(
-    "For the same wallet, get the daily APY history for the last 30 days. Calculate the average APY and tell me if the performance is trending up or down. Should I consider moving funds?",
-    result3.conversationHistory
-  );
-  console.log("🤖 Agent:", result4.response);
-
-  // Scenario 5: Cross-chain opportunity discovery
-  console.log("\n🌉 Scenario 5: Cross-Chain Analysis\n");
-  const result5 = await agent.chat(
-    "Compare yield opportunities across Base, Arbitrum, and Plasma for stablecoin farming. Which chain currently offers the best risk-adjusted returns? Factor in gas costs and protocol safety.",
-    result4.conversationHistory
-  );
-  console.log("🤖 Agent:", result5.response);
 }
 
 // Run examples
@@ -450,7 +483,7 @@ pnpm start
 The server will be running at:
 
 - Main endpoint: `http://localhost:3005/`
-- SSE endpoint: `http://localhost:3005/sse`
+- MCP endpoint: `http://localhost:3005/mcp`
 - Health check: `http://localhost:3005/health`
 
 ### Development Mode
@@ -475,14 +508,41 @@ Configure your server using environment variables:
 ## Available Scripts
 
 - `pnpm run build` - Compile TypeScript to JavaScript
-- `pnpm start` - Start the production HTTP/SSE server (`build/index.js`)
+- `pnpm start` - Start the production Streamable HTTP server (`build/index.js`)
+- `pnpm run start:stdio` - Start the STDIO server for Claude Desktop (`build/index-stdio.js`)
 - `pnpm run dev` - Build and start in development mode
 - `pnpm run clean` - Clean build directory
 
-**Note:** The project includes both:
+**Note:** The project includes:
 
-- `index.ts` - HTTP/SSE server for web/remote access
+- `index.ts` - Streamable HTTP server for web/remote access
 - `index-stdio.ts` - STDIO server for Claude Desktop (local)
+- `proxy-server.ts` - Proxy server bridging stdio to remote Streamable HTTP
+
+## Migration from SSE (Legacy)
+
+If you're upgrading from a previous version using SSE transport:
+
+1. Update `@modelcontextprotocol/sdk` to `^1.12.0` or later
+2. Change client transport from `SSEClientTransport` to `StreamableHTTPClientTransport`
+3. Update endpoint URLs from `/sse` to `/mcp`
+4. Add `Mcp-Session-Id` header handling (automatically managed by the SDK)
+
+**Before (SSE):**
+
+```typescript
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+const transport = new SSEClientTransport(new URL("https://mcp.zyf.ai/sse"));
+```
+
+**After (Streamable HTTP):**
+
+```typescript
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+const transport = new StreamableHTTPClientTransport(
+  new URL("https://mcp.zyf.ai/mcp")
+);
+```
 
 ## Contributing
 
