@@ -1,4 +1,4 @@
-# Zyfai DeFi MCP Server 🛠️
+# Zyfai DeFi MCP Server
 
 A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports **Streamable HTTP** transport (MCP 2024-11-05+) with complete portfolio management, analytics, and DeFi opportunities discovery.
 
@@ -6,21 +6,21 @@ You can make use of the official Zyfai mcp server deployed [here](https://mcp.zy
 
 ## Features
 
-- ✅ **17 MCP Tools** for complete DeFi workflow
-- ✅ **Portfolio Management** - Track positions across all chains
-- ✅ **Opportunities Discovery** - Find safe and degen yield opportunities
-- ✅ **Analytics & Metrics** - Earnings, TVL, volume, and more
-- ✅ **Historical Data** - Transaction history and APY tracking
-- ✅ **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
-- ✅ **Streamable HTTP transport** - Modern unified `/mcp` endpoint (MCP 2024-11-05+)
-- ✅ Session-based with `Mcp-Session-Id` header support
-- ✅ Express.js server with CORS support
-- ✅ Production-ready with PM2 process management
-- ✅ Comprehensive error handling & TypeScript
-- ✅ Built with [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
-- ✅ Powered by [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk)
+- **17 MCP Tools** for complete DeFi workflow
+- **Portfolio Management** - Track positions across all chains
+- **Opportunities Discovery** - Find safe and degen yield opportunities
+- **Analytics & Metrics** - Earnings, TVL, volume, and more
+- **Historical Data** - Transaction history and APY tracking
+- **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
+- **Streamable HTTP transport** - Modern unified `/mcp` endpoint (MCP 2024-11-05+)
+- Session-based with `Mcp-Session-Id` header support
+- Express.js server with CORS support
+- Production-ready with PM2 process management
+- Comprehensive error handling & TypeScript
+- Built with [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
+- Powered by [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk)
 
-## Transport Update: SSE → Streamable HTTP
+## Transport Update: SSE to Streamable HTTP
 
 This server has been updated from the deprecated SSE transport to **Streamable HTTP** (MCP specification 2024-11-05+):
 
@@ -179,8 +179,10 @@ const result = await client.callTool({
   arguments: { chainId: 8453, limit: 5 },
 });
 ```
+
 https://mcp.zyf.ai/mcp
-```
+
+````
 
 ### Testing with MCP Inspector
 
@@ -188,7 +190,7 @@ You can test the server using the official MCP Inspector:
 
 ```bash
 npx @modelcontextprotocol/inspector
-```
+````
 
 Then enter the endpoint URL: `https://mcp.zyf.ai/mcp`
 
@@ -237,7 +239,7 @@ async function initializeZyfaiMCP() {
   );
 
   await client.connect(transport);
-  console.log("✅ Connected to Zyfai MCP Server (Streamable HTTP)");
+  console.log("Connected to Zyfai MCP Server (Streamable HTTP)");
 
   return client;
 }
@@ -273,7 +275,7 @@ class DeFiAIAgent {
     }));
 
     console.log(
-      `🤖 Agent initialized with ${this.availableTools.length} Zyfai tools`
+      `Agent initialized with ${this.availableTools.length} Zyfai tools`
     );
   }
 
@@ -281,7 +283,7 @@ class DeFiAIAgent {
    * Execute a tool call via Zyfai MCP
    */
   async executeTool(toolName: string, toolInput: any) {
-    console.log(`🔧 Executing: ${toolName}`, toolInput);
+    console.log(`Executing: ${toolName}`, toolInput);
 
     const result = await this.zyfaiClient.callTool({
       name: toolName,
@@ -317,9 +319,7 @@ class DeFiAIAgent {
     });
 
     let message = response.choices[0].message;
-    console.log(
-      `💭 Response finish reason: ${response.choices[0].finish_reason}`
-    );
+    console.log(`Response finish reason: ${response.choices[0].finish_reason}`);
 
     // Handle tool calls iteratively
     while (message.tool_calls && message.tool_calls.length > 0) {
@@ -352,7 +352,7 @@ class DeFiAIAgent {
 
       message = response.choices[0].message;
       console.log(
-        `💭 Continued finish reason: ${response.choices[0].finish_reason}`
+        `Continued finish reason: ${response.choices[0].finish_reason}`
       );
     }
 
@@ -378,30 +378,30 @@ async function runDeFiAgent() {
   await agent.initialize();
 
   // Scenario 1: Find best yield opportunities
-  console.log("\n🎯 Scenario 1: Finding best yields\n");
+  console.log("\nScenario 1: Finding best yields\n");
   const result1 = await agent.chat(
     "I have $10,000 USDC on Base chain. Find me the safest yield opportunities with at least 4% APY. Compare the top 3 options and recommend the best one considering TVL and historical performance."
   );
-  console.log("🤖 Agent:", result1.response);
+  console.log("Agent:", result1.response);
 
   // Scenario 2: Portfolio analysis with multi-chain context
-  console.log("\n📊 Scenario 2: Portfolio Analysis\n");
+  console.log("\nScenario 2: Portfolio Analysis\n");
   const result2 = await agent.chat(
     "Analyze the portfolio for wallet 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb across Base and Arbitrum. Calculate total earnings, identify underperforming positions, and suggest rebalancing strategies.",
     result1.conversationHistory
   );
-  console.log("🤖 Agent:", result2.response);
+  console.log("Agent:", result2.response);
 }
 
 // Run examples
-console.log("🚀 Starting AI DeFi Agent Examples...\n");
+console.log("Starting AI DeFi Agent Examples...\n");
 
 runDeFiAgent()
   .then(() => {
-    console.log("\n✅ All scenarios completed!");
+    console.log("\nAll scenarios completed!");
   })
   .catch((error) => {
-    console.error("❌ Error:", error);
+    console.error("Error:", error);
   });
 ```
 
