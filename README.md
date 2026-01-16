@@ -184,15 +184,33 @@ https://mcp.zyf.ai/mcp
 
 ````
 
-### Testing with MCP Inspector
+### Testing the Server
 
-You can test the server using the official MCP Inspector:
+**For HTTP/Streamable HTTP servers**, test using curl or programmatic clients:
 
 ```bash
-npx @modelcontextprotocol/inspector
-````
+# Health check
+curl https://mcp.zyf.ai/health
 
-Then enter the endpoint URL: `https://mcp.zyf.ai/mcp`
+# Test MCP endpoint (requires proper MCP protocol messages)
+curl -X POST https://mcp.zyf.ai/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2024-11-05",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "test-client",
+        "version": "1.0.0"
+      }
+    },
+    "id": 1
+  }'
+```
+
+**Note:** The MCP Inspector (`npx @modelcontextprotocol/inspector`) is designed for **STDIO servers only**. For HTTP servers, use the code examples above or integrate with your LLM application.
 
 ### Building LLM-Powered DeFi Apps with Zyfai MCP
 
@@ -568,3 +586,4 @@ ISC
 
 - [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) - Zyfai TypeScript SDK
 - [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp) - Model Context Protocol SDK
+````
