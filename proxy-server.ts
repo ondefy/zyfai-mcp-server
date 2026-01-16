@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 /**
  * MCP Proxy Server
- * Bridges Claude Desktop (stdio) with Remote SSE MCP Server
+ * Bridges Claude Desktop (stdio) with Remote Streamable HTTP MCP Server
  *
- * This proxy solves the issue where Claude Desktop doesn't properly handle
- * the MCP SDK's session-based SSE pattern. It runs locally via stdio and
- * forwards requests to the remote SSE server at sdk.zyf.ai.
+ * Updated from deprecated SSE to Streamable HTTP transport (MCP 2024-11-05+)
+ *
+ * This proxy runs locally via stdio and forwards requests to the remote
+ * Streamable HTTP MCP server at sdk.zyf.ai.
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { z } from "zod";
@@ -112,14 +113,16 @@ class MCPProxyServer {
   }
 
   /**
-   * Connect to remote SSE server
+   * Connect to remote Streamable HTTP server
+   * Updated from SSE to use the new unified /mcp endpoint
    */
   private async connectToRemoteServer(): Promise<void> {
     log.info(`Connecting to remote MCP server: ${REMOTE_SERVER_URL}`);
 
     try {
-      const transport = new SSEClientTransport(
-        new URL(`${REMOTE_SERVER_URL}/sse`)
+      // Use Streamable HTTP transport instead of deprecated SSE
+      const transport = new StreamableHTTPClientTransport(
+        new URL(`${REMOTE_SERVER_URL}/mcp`)
       );
 
       // Add timeout to connection attempt
@@ -134,7 +137,9 @@ class MCPProxyServer {
       await Promise.race([connectPromise, timeoutPromise]);
       this.isConnected = true;
 
-      log.info("✅ Successfully connected to remote MCP server");
+      log.info(
+        "✅ Successfully connected to remote MCP server (Streamable HTTP)"
+      );
 
       // Log available tools
       try {
@@ -151,7 +156,7 @@ class MCPProxyServer {
       }
     } catch (error) {
       log.error(`Failed to connect to remote server: ${error}`);
-      log.error(`Make sure ${REMOTE_SERVER_URL}/sse is accessible`);
+      log.error(`Make sure ${REMOTE_SERVER_URL}/mcp is accessible`);
       throw error;
     }
   }
@@ -172,6 +177,8 @@ class MCPProxyServer {
       await this.server.connect(transport);
 
       log.info("✅ Proxy server ready - Claude Desktop can now connect");
+      log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+      log.info("🔄 Transport: Streamable HTTP (MCP 2024-11-05+)");
       log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     } catch (error) {
       log.error(`Failed to start proxy server: ${error}`);
