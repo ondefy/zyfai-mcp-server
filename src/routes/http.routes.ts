@@ -37,13 +37,14 @@ export function setupRoutes(server: McpServer) {
     });
   });
 
-  // Root endpoint
+  // Root endpoint - Server info
   router.get("/", (req: Request, res: Response) => {
     res.status(200).json({
-      message: "Zyfai Rebalancing MCP Server",
+      message: "Zyfai DeFi MCP Server",
       version: "1.0.0",
       description:
         "MCP server providing access to Zyfai DeFi APIs for portfolio management, rebalancing, and opportunities discovery",
+      transport: "Streamable HTTP",
       endpoints: {
         health: "/health",
         mcp: "/mcp",

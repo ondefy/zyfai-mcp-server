@@ -1,5 +1,5 @@
 /**
- * Zyfai Rebalancing MCP Server
+ * Zyfai DeFi MCP Server
  * Main entry point - Modular architecture
  */
 
@@ -40,6 +40,8 @@ const app = express();
 
 // Middleware
 app.use(express.json());
+
+// CORS configuration
 app.use(
   cors({
     origin: config.allowedOrigins,
@@ -47,6 +49,7 @@ app.use(
     exposedHeaders: ["Mcp-Session-Id"],
   })
 );
+
 app.use(requestLogger);
 
 // ============================================================================
@@ -54,7 +57,7 @@ app.use(requestLogger);
 // ============================================================================
 
 const server = new McpServer({
-  name: "zyfai-rebalancing-mcp",
+  name: "zyfai-defi-mcp",
   version: "1.0.0",
 });
 

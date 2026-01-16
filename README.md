@@ -86,15 +86,15 @@ zyfai-mcp-server/
 │   │   └── zyfai-api.service.ts          # Zyfai SDK wrapper service
 │   ├── tools/
 │   │   ├── index.ts                      # Tool registration
-│   │   ├── portfolio.tools.ts             # Portfolio tools (2 tools)
+│   │   ├── portfolio.tools.ts            # Portfolio tools (2 tools)
 │   │   ├── opportunities.tools.ts        # Opportunities tools (3 tools)
-│   │   ├── analytics.tools.ts             # Analytics tools (8 tools)
+│   │   ├── analytics.tools.ts            # Analytics tools (8 tools)
 │   │   ├── historical.tools.ts           # Historical data tools (3 tools)
 │   │   └── helpers.tools.ts              # Helper tools (1 tool)
 │   ├── routes/
 │   │   └── http.routes.ts                # Streamable HTTP routes
 │   ├── middleware/
-│   │   └── index.ts                       # Middleware (logger, error handler)
+│   │   └── index.ts                      # Middleware (logger, error handler)
 │   └── types/
 │       └── zyfai-api.types.ts            # TypeScript type definitions
 ├── package.json                          # Project dependencies
@@ -146,7 +146,7 @@ Add to your Cursor MCP settings:
 }
 ```
 
-### Using with Web Applications
+### Using with Cursor / Other MCP Clients
 
 The server uses Streamable HTTP transport, making it accessible from web browsers and HTTP clients:
 
@@ -179,6 +179,18 @@ const result = await client.callTool({
   arguments: { chainId: 8453, limit: 5 },
 });
 ```
+https://mcp.zyf.ai/mcp
+```
+
+### Testing with MCP Inspector
+
+You can test the server using the official MCP Inspector:
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+Then enter the endpoint URL: `https://mcp.zyf.ai/mcp`
 
 ### Building LLM-Powered DeFi Apps with Zyfai MCP
 

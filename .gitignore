@@ -46,3 +46,8 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Node modules
+test-example/
+test-example/node_modules
+test-example/.pnpm-store
