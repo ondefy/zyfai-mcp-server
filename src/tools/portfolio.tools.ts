@@ -11,41 +11,6 @@ export function registerPortfolioTools(
   zyfiApi: ZyfaiApiService
 ) {
   server.tool(
-    "get-debank-portfolio",
-    "Get multi-chain portfolio information for a wallet across all supported chains using Debank",
-    {
-      walletAddress: z
-        .string()
-        .describe("The wallet address to fetch multi-chain portfolio for"),
-    },
-    async ({ walletAddress }) => {
-      try {
-        const response = await zyfiApi.getDebankPortfolio(walletAddress);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching Debank portfolio: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  server.tool(
     "get-positions",
     "Get all active DeFi positions for a user's wallet address",
     {

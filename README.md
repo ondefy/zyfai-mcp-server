@@ -39,9 +39,8 @@ This server has been updated from the deprecated SSE transport to **Streamable H
 
 ## Available Tools
 
-### Portfolio Management (2 tools)
+### Portfolio Management (1 tool)
 
-- `get-debank-portfolio` - Get multi-chain portfolio information using Debank
 - `get-positions` - Get all active DeFi positions for a user's wallet
 
 ### Opportunities Discovery (3 tools)

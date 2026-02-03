@@ -94,10 +94,6 @@ export class ZyfaiApiService {
     return await this.sdk.getDailyEarnings(walletAddress, startDate, endDate);
   }
 
-  async getDebankPortfolio(walletAddress: string) {
-    return await this.sdk.getDebankPortfolio(walletAddress);
-  }
-
   async getSafeOpportunities(chainId?: SupportedChainId) {
     return await this.sdk.getSafeOpportunities(chainId);
   }
