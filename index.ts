@@ -100,7 +100,7 @@ async function main() {
       console.log(`   - Session-based with Mcp-Session-Id header`);
       console.log(`   - Supports streaming responses`);
       console.log(`\n  Available MCP Tools: 17`);
-      console.log(`   - Portfolio Management: 2 tools`);
+      console.log(`   - Portfolio Management: 1 tools`);
       console.log(`   - Opportunities: 3 tools`);
       console.log(`   - Analytics & Metrics: 8 tools`);
       console.log(`   - Historical Data: 3 tools`);
