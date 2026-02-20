@@ -9,7 +9,6 @@ import { registerProtocolTools } from "./protocol.tools.js";
 import { registerOpportunitiesTools } from "./opportunities.tools.js";
 import { registerAnalyticsTools } from "./analytics.tools.js";
 import { registerUserDataTools } from "./user-data.tools.js";
-import { registerHelperTools } from "./helpers.tools.js";
 import { registerEarningsTools } from "./earnings.tools.js";
 
 /**
@@ -21,5 +20,4 @@ export function registerAllTools(server: McpServer, zyfiApi: ZyfaiApiService) {
   registerAnalyticsTools(server, zyfiApi);
   registerUserDataTools(server, zyfiApi);
   registerEarningsTools(server, zyfiApi);
-  registerHelperTools(server, zyfiApi);
 }

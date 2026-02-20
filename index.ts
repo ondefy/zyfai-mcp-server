@@ -86,26 +86,26 @@ async function main() {
     // Start Express server
     app.listen(config.port, config.host, () => {
       console.log(`\n${"=".repeat(60)}`);
-      console.log(`  Zyfai Rebalancing MCP Server v1.0.0`);
+      console.log(`  🚀 Zyfai DeFi MCP Server v1.0.0`);
       console.log(`${"=".repeat(60)}`);
       console.log(
         `\n📡 Server running on http://${config.host}:${config.port}`
       );
-      console.log(`  MCP endpoint: http://${config.host}:${config.port}/mcp`);
+      console.log(`   MCP endpoint: http://${config.host}:${config.port}/mcp`);
       console.log(
-        `  Health check: http://${config.host}:${config.port}/health`
+        `   Health check: http://${config.host}:${config.port}/health`
       );
-      console.log(`\n  Transport: Streamable HTTP (MCP 2024-11-05+)`);
+      console.log(`\n📦 Transport: Streamable HTTP (MCP 2024-11-05+)`);
       console.log(`   - Unified /mcp endpoint for all operations`);
       console.log(`   - Session-based with Mcp-Session-Id header`);
       console.log(`   - Supports streaming responses`);
-      console.log(`\n  Available MCP Tools: 17`);
-      console.log(`   - Portfolio Management: 1 tools`);
-      console.log(`   - Opportunities: 3 tools`);
-      console.log(`   - Analytics & Metrics: 8 tools`);
-      console.log(`   - Historical Data: 3 tools`);
-      console.log(`   - User Flow Helpers: 1 tool`);
-      console.log(`\n  Zyfai SDK: Using @zyfai/sdk`);
+      console.log(`\n🔧 Available MCP Tools: 15`);
+      console.log(`   - Protocol: 1 tool`);
+      console.log(`   - Opportunities: 2 tools`);
+      console.log(`   - Analytics: 6 tools`);
+      console.log(`   - User Data: 3 tools`);
+      console.log(`   - Earnings: 3 tools`);
+      console.log(`\n📚 Zyfai SDK: @zyfai/sdk`);
       console.log(`${"=".repeat(60)}\n`);
     });
   } catch (error) {
