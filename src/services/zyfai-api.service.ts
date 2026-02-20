@@ -82,10 +82,6 @@ export class ZyfaiApiService {
     return await this.sdk.getOnchainEarnings(walletAddress);
   }
 
-  async calculateOnchainEarnings(walletAddress: string) {
-    return await this.sdk.calculateOnchainEarnings(walletAddress);
-  }
-
   async getDailyEarnings(
     walletAddress: string,
     startDate?: string,
@@ -94,12 +90,12 @@ export class ZyfaiApiService {
     return await this.sdk.getDailyEarnings(walletAddress, startDate, endDate);
   }
 
-  async getSafeOpportunities(chainId?: SupportedChainId) {
-    return await this.sdk.getSafeOpportunities(chainId);
+  async getConservativeOpportunities(chainId?: SupportedChainId) {
+    return await this.sdk.getConservativeOpportunities(chainId);
   }
 
-  async getDegenStrategies(chainId?: SupportedChainId) {
-    return await this.sdk.getDegenStrategies(chainId);
+  async getAggressiveOpportunities(chainId?: SupportedChainId) {
+    return await this.sdk.getAggressiveOpportunities(chainId);
   }
 
   async getDailyApyHistory(
@@ -116,8 +112,8 @@ export class ZyfaiApiService {
   async getAPYPerStrategy(
     crossChain: boolean = false,
     days: number = 7,
-    strategy: string = "safe"
+    strategy: string = "conservative"
   ) {
-    return await this.sdk.getAPYPerStrategy(crossChain, days, strategy);
+    return await this.sdk.getAPYPerStrategy(crossChain, days, strategy as "conservative" | "aggressive");
   }
 }

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
-export function registerHistoricalTools(
+export function registerUserDataTools(
   server: McpServer,
   zyfiApi: ZyfaiApiService
 ) {
@@ -67,47 +67,6 @@ export function registerHistoricalTools(
   );
 
   server.tool(
-    "get-daily-apy-history",
-    "Get daily APY history with weighted average for a wallet",
-    {
-      walletAddress: z.string().describe("The smart wallet address"),
-      days: z
-        .enum(["7D", "14D", "30D"])
-        .optional()
-        .default("7D")
-        .describe("Period: '7D', '14D', or '30D' (default: '7D')"),
-    },
-    async ({ walletAddress, days }) => {
-      try {
-        const response = await zyfiApi.getDailyApyHistory(
-          walletAddress,
-          days || "7D"
-        );
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching daily APY history: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  server.tool(
     "get-first-topup",
     "Get the first topup (deposit) information for a wallet",
     {
@@ -135,6 +94,47 @@ export function registerHistoricalTools(
             {
               type: "text",
               text: `Error fetching first topup: ${
+                error instanceof Error ? error.message : "Unknown error"
+              }`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "get-positions",
+    "Get all active DeFi positions and portfolio for a user's wallet address",
+    {
+      userAddress: z
+        .string()
+        .describe("The user's EOA address to get positions and portfolio for"),
+      chainId: z
+        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
+        .optional()
+        .describe(
+          "Optional chain ID to filter positions and portfolio (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
+        ),
+    },
+    async ({ userAddress, chainId }) => {
+      try {
+        const response = await zyfiApi.getPositions(userAddress, chainId);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(response, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error fetching positions and portfolio: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },
