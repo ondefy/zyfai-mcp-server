@@ -11,120 +11,6 @@ export function registerAnalyticsTools(
   zyfiApi: ZyfaiApiService
 ) {
   server.tool(
-    "get-onchain-earnings",
-    "Get onchain earnings for a wallet including total, current, and lifetime earnings",
-    {
-      walletAddress: z
-        .string()
-        .describe("The smart wallet address to get earnings for"),
-    },
-    async ({ walletAddress }) => {
-      try {
-        const response = await zyfiApi.getOnchainEarnings(walletAddress);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching onchain earnings: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  server.tool(
-    "calculate-onchain-earnings",
-    "Calculate/refresh onchain earnings for a wallet (triggers recalculation on backend)",
-    {
-      walletAddress: z
-        .string()
-        .describe("The smart wallet address to calculate earnings for"),
-    },
-    async ({ walletAddress }) => {
-      try {
-        const response = await zyfiApi.calculateOnchainEarnings(walletAddress);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error calculating onchain earnings: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  server.tool(
-    "get-daily-earnings",
-    "Get daily earnings for a wallet within a date range",
-    {
-      walletAddress: z
-        .string()
-        .describe("The smart wallet address to get daily earnings for"),
-      startDate: z
-        .string()
-        .optional()
-        .describe("Start date in YYYY-MM-DD format"),
-      endDate: z.string().optional().describe("End date in YYYY-MM-DD format"),
-    },
-    async ({ walletAddress, startDate, endDate }) => {
-      try {
-        const response = await zyfiApi.getDailyEarnings(
-          walletAddress,
-          startDate,
-          endDate
-        );
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching daily earnings: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  server.tool(
     "get-tvl",
     "Get total value locked (TVL) across all Zyfai accounts",
     {},
@@ -188,7 +74,7 @@ export function registerAnalyticsTools(
 
   server.tool(
     "get-active-wallets",
-    "Get active wallets for a specific chain",
+    "Get active wallets for a specific chain on Zyfai",
     {
       chainId: z
         .union([z.literal(8453), z.literal(42161), z.literal(9745)])

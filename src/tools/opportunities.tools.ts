@@ -11,7 +11,7 @@ export function registerOpportunitiesTools(
   zyfiApi: ZyfaiApiService
 ) {
   server.tool(
-    "get-safe-opportunities",
+    "get-conservative-opportunities",
     "Get safe (low risk) DeFi opportunities suitable for conservative investors",
     {
       chainId: z
@@ -23,7 +23,7 @@ export function registerOpportunitiesTools(
     },
     async ({ chainId }) => {
       try {
-        const response = await zyfiApi.getSafeOpportunities(chainId);
+        const response = await zyfiApi.getConservativeOpportunities(chainId);
         return {
           content: [
             {
@@ -37,7 +37,7 @@ export function registerOpportunitiesTools(
           content: [
             {
               type: "text",
-              text: `Error fetching safe opportunities: ${
+              text: `Error fetching conservative opportunities: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },
@@ -49,7 +49,7 @@ export function registerOpportunitiesTools(
   );
 
   server.tool(
-    "get-degen-strategies",
+    "get-aggressive-opportunities",
     "Get degen (high-risk, high-reward) yield strategies for aggressive investors",
     {
       chainId: z
@@ -61,7 +61,7 @@ export function registerOpportunitiesTools(
     },
     async ({ chainId }) => {
       try {
-        const response = await zyfiApi.getDegenStrategies(chainId);
+        const response = await zyfiApi.getAggressiveOpportunities(chainId);
         return {
           content: [
             {
@@ -75,44 +75,7 @@ export function registerOpportunitiesTools(
           content: [
             {
               type: "text",
-              text: `Error fetching degen strategies: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  server.tool(
-    "get-available-protocols",
-    "Get available DeFi protocols and pools for a specific chain",
-    {
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
-    },
-    async ({ chainId }) => {
-      try {
-        const response = await zyfiApi.getAvailableProtocols(chainId);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching available protocols: ${
+              text: `Error fetching aggressive opportunities: ${
                 error instanceof Error ? error.message : "Unknown error"
               }`,
             },

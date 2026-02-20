@@ -1,16 +1,17 @@
 # Zyfai DeFi MCP Server
 
-A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 17 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports **Streamable HTTP** transport (MCP 2024-11-05+) with complete portfolio management, analytics, and DeFi opportunities discovery.
+A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 15 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports **Streamable HTTP** transport (MCP 2024-11-05+) with complete portfolio management, analytics, and DeFi opportunities discovery.
 
 You can make use of the official Zyfai mcp server deployed [here](https://mcp.zyf.ai) or run your own.
 
 ## Features
 
-- **17 MCP Tools** for complete DeFi workflow
+- **15 MCP Tools** for complete DeFi workflow
 - **Portfolio Management** - Track positions across all chains
-- **Opportunities Discovery** - Find safe and degen yield opportunities
-- **Analytics & Metrics** - Earnings, TVL, volume, and more
-- **Historical Data** - Transaction history and APY tracking
+- **Opportunities Discovery** - Find conservative and aggressive yield opportunities
+- **Analytics & Metrics** - TVL, volume, wallet analytics, and more
+- **Earnings Tracking** - Onchain earnings, daily earnings, APY history
+- **User Data** - Transaction history, positions, first topup info
 - **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
 - **Streamable HTTP transport** - Modern unified `/mcp` endpoint (MCP 2024-11-05+)
 - Session-based with `Mcp-Session-Id` header support
@@ -39,37 +40,35 @@ This server has been updated from the deprecated SSE transport to **Streamable H
 
 ## Available Tools
 
-### Portfolio Management (1 tool)
+### Protocol (1 tool)
 
-- `get-positions` - Get all active DeFi positions for a user's wallet
+- `get-available-protocols` - Get available DeFi protocols and pools for a specific chain on Zyfai
 
-### Opportunities Discovery (3 tools)
+### Opportunities Discovery (2 tools)
 
-- `get-safe-opportunities` - Get safe (low risk) DeFi opportunities
-- `get-degen-strategies` - Get degen (high-risk, high-reward) yield strategies
-- `get-available-protocols` - Get available DeFi protocols and pools for a chain
+- `get-conservative-opportunities` - Get safe (low risk) DeFi opportunities suitable for conservative investors
+- `get-aggressive-opportunities` - Get degen (high-risk, high-reward) yield strategies for aggressive investors
 
-### Analytics & Metrics (8 tools)
+### Analytics & Metrics (6 tools)
 
-- `get-onchain-earnings` - Get onchain earnings for a wallet
-- `calculate-onchain-earnings` - Calculate/refresh onchain earnings (triggers recalculation)
-- `get-daily-earnings` - Get daily earnings for a wallet within a date range
 - `get-tvl` - Get total value locked (TVL) across all Zyfai accounts
 - `get-volume` - Get total volume across all Zyfai accounts
-- `get-active-wallets` - Get active wallets for a specific chain
+- `get-active-wallets` - Get active wallets for a specific chain on Zyfai
 - `get-smart-wallet-by-eoa` - Get smart wallets associated with an EOA address
 - `get-rebalance-frequency` - Get rebalance frequency/tier for a wallet
 - `get-apy-per-strategy` - Get APY per strategy for a specific chain
 
-### Historical Data (3 tools)
+### User Data (3 tools)
 
+- `get-positions` - Get all active DeFi positions and portfolio for a user's wallet address
 - `get-history` - Get transaction history for a wallet with pagination
-- `get-daily-apy-history` - Get daily APY history with weighted average
 - `get-first-topup` - Get the first topup (deposit) information for a wallet
 
-### User Helpers (1 tool)
+### Earnings (3 tools)
 
-- `get-user-details` - Get current authenticated user details (requires authentication)
+- `get-onchain-earnings` - Get onchain earnings for a wallet including total, current, and lifetime earnings
+- `get-daily-earnings` - Get daily earnings for a wallet within a date range
+- `get-daily-apy-history` - Get daily APY history for a wallet
 
 ## Project Structure
 
@@ -85,17 +84,15 @@ zyfai-mcp-server/
 │   │   └── zyfai-api.service.ts          # Zyfai SDK wrapper service
 │   ├── tools/
 │   │   ├── index.ts                      # Tool registration
-│   │   ├── portfolio.tools.ts            # Portfolio tools (2 tools)
-│   │   ├── opportunities.tools.ts        # Opportunities tools (3 tools)
-│   │   ├── analytics.tools.ts            # Analytics tools (8 tools)
-│   │   ├── historical.tools.ts           # Historical data tools (3 tools)
-│   │   └── helpers.tools.ts              # Helper tools (1 tool)
+│   │   ├── protocol.tools.ts             # Protocol tools (1 tool)
+│   │   ├── opportunities.tools.ts        # Opportunities tools (2 tools)
+│   │   ├── analytics.tools.ts            # Analytics tools (6 tools)
+│   │   ├── user-data.tools.ts            # User data tools (3 tools)
+│   │   └── earnings.tools.ts             # Earnings tools (3 tools)
 │   ├── routes/
 │   │   └── http.routes.ts                # Streamable HTTP routes
-│   ├── middleware/
-│   │   └── index.ts                      # Middleware (logger, error handler)
-│   └── types/
-│       └── zyfai-api.types.ts            # TypeScript type definitions
+│   └── middleware/
+│       └── index.ts                      # Middleware (logger, error handler)
 ├── package.json                          # Project dependencies
 ├── tsconfig.json                         # TypeScript configuration
 ├── ecosystem.config.cjs                  # PM2 configuration
@@ -174,14 +171,12 @@ console.log(
 
 // Call a tool
 const result = await client.callTool({
-  name: "get-safe-opportunities",
-  arguments: { chainId: 8453, limit: 5 },
+  name: "get-conservative-opportunities",
+  arguments: { chainId: 8453 },
 });
 ```
 
 https://mcp.zyf.ai/mcp
-
-````
 
 ### Testing with MCP Inspector
 
@@ -189,7 +184,7 @@ You can test the server using the official MCP Inspector:
 
 ```bash
 npx @modelcontextprotocol/inspector
-````
+```
 
 Then enter the endpoint URL: `https://mcp.zyf.ai/mcp`
 
@@ -409,7 +404,7 @@ runDeFiAgent()
 ```
 User: "I have 5000 USDC on Base. What's my best option?"
 
-Agent: *Calls get-safe-opportunities tool*
+Agent: *Calls get-conservative-opportunities tool*
        *Calls get-available-protocols tool*
        *Analyzes results*
 
