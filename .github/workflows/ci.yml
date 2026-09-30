@@ -10,10 +10,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ondefy/zyfai-sdk
+          path: zyfai-sdk
+          ref: ${{ vars.ZYFAI_SDK_CI_REF || 'feat/mcp-agent-interface' }}
+
       - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+
+      - name: Build @zyfai/sdk
+        working-directory: zyfai-sdk
+        run: npm ci && npm run build
+
+      - name: Install dependencies
+        run: |
+          cp pnpm-workspace.example.yaml pnpm-workspace.yaml
+          pnpm install --no-frozen-lockfile
+
       - run: pnpm run check
