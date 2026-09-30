@@ -28,16 +28,20 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^22.19.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vite": "^6.0.0",
+    "vitest": "^3.0.0"
   },
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit && pnpm run build",
+    "test:integration": "sh -c 'if [ -n \"$1\" ]; then vitest run src/integration/$1.integration.test.ts --fileParallelism=false; else vitest run src/integration --fileParallelism=false; fi' --",
+    "test:integration:local": "ZYFAI_ENV=local pnpm dlx wait-on tcp:127.0.0.1:3000 -t 120000 -l && pnpm run test:integration",
     "build": "tsc",
     "start": "node build/index.js",
     "start:stdio": "node build/index-stdio.js",
     "dev": "tsc && node build/index.js",
-    "dev:watch": "tsc && pnpm dlx concurrently -k -n tsc,mcp -c blue,green \"tsc -w --preserveWatchOutput\" \"pnpm dlx nodemon -q --watch build --watch ../zyfai-sdk/dist -e js,mjs,cjs --delay 300ms --exec node build/index.js\"",
+    "dev:watch": "sh scripts/dev-watch.sh",
     "clean": "rm -rf build"
   }
 }

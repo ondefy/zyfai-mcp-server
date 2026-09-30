@@ -3,6 +3,10 @@
  * Centralized environment variable management
  */
 
+import { config as loadDotenv } from "dotenv";
+
+loadDotenv();
+
 import type { BackendEnvironment } from "@zyfai/sdk";
 
 function parseBackendEnvironment(): BackendEnvironment | undefined {

@@ -43,10 +43,11 @@ See `.env.example`. Required for live API calls:
 ```bash
 pnpm install
 pnpm run check    # tsc --noEmit + build — canonical validation
+pnpm run test:integration   # opt-in; .env.test + ZYFAI_ENV (not part of check)
 pnpm run build
 pnpm start        # production HTTP server (build/index.js)
 pnpm run dev      # build + start (one shot)
-pnpm run dev:watch # tsc + nodemon; restarts when MCP sources or ../zyfai-sdk/dist change
+pnpm run dev:watch # tsc -w + nodemon (single compile pass); restarts on MCP build or linked SDK entry files
 pnpm run start:stdio
 ```
 
@@ -57,14 +58,41 @@ When `zyfai-workspace`, `zyfai-sdk`, and `zyfai-mcp-server` are sibling submodul
 ```bash
 cp zyfai-mcp-server/.env.example zyfai-mcp-server/.env   # ZYFAI_API_KEY required for live API calls
 pnpm dev:zyfai-mcp:link   # build SDK + gitignored pnpm-workspace.yaml override (once per clone)
-pnpm dev:zyfai-mcp        # SDK tsup --watch + MCP dev:watch on :3005
+pnpm dev:zyfai-mcp        # zyfai-api :3000 + SDK tsup --watch + MCP dev:watch on :3005
 ```
 
 MCP endpoint: `http://localhost:3005/mcp` (health: `/health`). Point Cursor at that URL with `transport: "http"` instead of prod `https://mcp.zyf.ai/mcp`.
 
-From workspace root, full stack with MCP: `pnpm dev -- --mcp` (or `pnpm dev:mcp`). Sets `ZYFAI_BACKEND_ENV=local` on the MCP process (execution → `http://localhost:3000`). For opportunity/TVL-style reads, set `ZYFAI_DATA_API_URL` in `.env` to staging defi-api unless you run `zyfai-defi-api` locally on `:3000`.
+With `MCP_AUTH_REQUIRED=true`, `zyfai-api` must be up for OAuth (`MCP_OAUTH_JWT_SECRET` / `MCP_RESOURCE_URL` aligned in both `.env` files). `dev:zyfai-mcp` starts the API; wait for `:3000` before expecting Cursor OAuth to succeed.
+
+From workspace root, full stack with MCP: `pnpm dev -- --mcp` (or `pnpm dev:mcp`) adds pool + frontend. Sets `ZYFAI_BACKEND_ENV=local` on the MCP process (execution → `http://localhost:3000`). For opportunity/TVL-style reads, set `ZYFAI_DATA_API_URL` in `.env` to staging defi-api unless you run `zyfai-defi-api` locally on `:3000`.
 
 Restore npm `@zyfai/sdk`: `rm zyfai-mcp-server/pnpm-workspace.yaml && cd zyfai-mcp-server && pnpm install`.
+
+### Integration testing
+
+Opt-in Vitest suites in `src/integration/*.integration.test.ts` (pattern matches `zyfai-sdk/src/integration`). They are **not** part of `pnpm run check`.
+
+**Local (default in `env.test.example`):** execution API on `:3000`, data API on staging defi-api (same hybrid as `.env` for dev). `zyfai-mcp-server/.env.test` overrides `../zyfai-sdk/.env.test` — set `ZYFAI_ENV=local` there; do not copy `.env` into `.env.test`.
+
+```bash
+# Terminal 1 — from workspace root (API + MCP, or pnpm dev:zyfai-api alone)
+pnpm dev:zyfai-mcp
+
+# Terminal 2 — waits for :3000 then runs suites
+pnpm test:zyfai-mcp:integration:local
+# or inside zyfai-mcp-server: pnpm run test:integration:local
+```
+
+```bash
+cp env.test.example .env.test
+pnpm run test:integration              # uses ZYFAI_ENV from .env.test
+pnpm run test:integration:local        # forces local + wait-on :3000
+ZYFAI_ENV=staging pnpm run test:integration
+MCP_INTEGRATION_BASE_URL=http://127.0.0.1:3005 pnpm run test:integration
+```
+
+`applyIntegrationServerEnv()` maps `ZYFAI_ENV` → `ZYFAI_BACKEND_ENV` and applies the local data-api default when unset. Helpers: `src/integration/utils.ts` only.
 
 Docker: `pnpm-lock.yaml` + `Dockerfile` (default `PORT=3005`). PM2: `ecosystem.config.cjs`.
 

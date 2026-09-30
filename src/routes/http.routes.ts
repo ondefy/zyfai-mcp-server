@@ -9,10 +9,12 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "crypto";
 import { runWithMcpAuth } from "../auth/request-context.js";
+import { createMcpServer } from "../create-mcp-server.js";
 import {
   mcpAuthMiddleware,
   type RequestWithMcpAuth,
 } from "../middleware/mcp-auth.middleware.js";
+import type { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
 async function handleMcpRequest(
   req: Request,
@@ -32,13 +34,18 @@ async function handleMcpRequest(
 
 const router = Router();
 
-// Store active transports by session ID for stateful connections
-const transports = new Map<string, StreamableHTTPServerTransport>();
+type McpSession = {
+  transport: StreamableHTTPServerTransport;
+  server: McpServer;
+};
+
+// Store active MCP sessions (one server + transport pair per client session)
+const sessions = new Map<string, McpSession>();
 
 /**
  * Setup HTTP routes with Streamable HTTP transport
  */
-export function setupRoutes(server: McpServer) {
+export function setupRoutes(zyfaiApi: ZyfaiApiService) {
   // Health check endpoint
   router.get("/health", (req: Request, res: Response) => {
     res.status(200).json({
@@ -112,11 +119,10 @@ export function setupRoutes(server: McpServer) {
           },
         });
 
-        // Store transport for future requests
-        transports.set(newSessionId, transport);
+        const mcpServer = createMcpServer(zyfaiApi);
+        sessions.set(newSessionId, { transport, server: mcpServer });
 
-        // Connect the MCP server to this transport
-        await server.connect(transport);
+        await mcpServer.connect(transport);
 
         console.log(`[MCP] New session created: ${newSessionId}`);
       } else {
@@ -134,8 +140,8 @@ export function setupRoutes(server: McpServer) {
           return;
         }
 
-        const existingTransport = transports.get(sessionId);
-        if (!existingTransport) {
+        const existingSession = sessions.get(sessionId);
+        if (!existingSession) {
           res.status(404).json({
             jsonrpc: "2.0",
             error: {
@@ -147,7 +153,7 @@ export function setupRoutes(server: McpServer) {
           return;
         }
 
-        transport = existingTransport;
+        transport = existingSession.transport;
         console.log(`[MCP] Using existing session: ${sessionId}`);
       }
 
@@ -189,8 +195,8 @@ export function setupRoutes(server: McpServer) {
       return;
     }
 
-    const transport = transports.get(sessionId);
-    if (!transport) {
+    const session = sessions.get(sessionId);
+    if (!session) {
       res.status(404).json({
         jsonrpc: "2.0",
         error: {
@@ -205,7 +211,7 @@ export function setupRoutes(server: McpServer) {
     console.log(`[MCP] GET stream opened for session: ${sessionId}`);
 
     // Handle SSE streaming for server notifications
-    await handleMcpRequest(req, res, transport);
+    await handleMcpRequest(req, res, session.transport);
   });
 
   /**
@@ -227,8 +233,8 @@ export function setupRoutes(server: McpServer) {
       return;
     }
 
-    const transport = transports.get(sessionId);
-    if (!transport) {
+    const session = sessions.get(sessionId);
+    if (!session) {
       res.status(404).json({
         jsonrpc: "2.0",
         error: {
@@ -241,8 +247,9 @@ export function setupRoutes(server: McpServer) {
     }
 
     try {
-      await transport.close();
-      transports.delete(sessionId);
+      await session.transport.close();
+      await session.server.close();
+      sessions.delete(sessionId);
       console.log(`[MCP] Session terminated: ${sessionId}`);
       res.status(200).json({ status: "session_terminated", sessionId });
     } catch (error) {

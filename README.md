@@ -56,7 +56,7 @@ Copy [`.env.example`](.env.example). Common variables:
 | Variable | Purpose |
 | --- | --- |
 | `ZYFAI_API_KEY` | Partner SDK key (required for live API calls) |
-| `MCP_AUTH_REQUIRED` | `true` in production (OAuth); `false` for local legacy mode |
+| `MCP_AUTH_REQUIRED` | `true` in production and for local OAuth/user-tool tests; `false` allows unauthenticated HTTP for public read tools only |
 | `PORT` / `HOST` / `ALLOWED_ORIGINS` | HTTP server |
 
 Full list and backend URL overrides: `.env.example` and [`AGENTS.md`](AGENTS.md#environment).
@@ -66,6 +66,7 @@ Full list and backend URL overrides: `.env.example` and [`AGENTS.md`](AGENTS.md#
 | Command | Purpose |
 | --- | --- |
 | `pnpm run check` | Canonical validation (typecheck + build) |
+| `pnpm run test:integration` | Opt-in end-to-end MCP tests (`env.test.example` → `.env.test`; see `AGENTS.md`) |
 | `pnpm start` | HTTP server (`build/index.js`) |
 | `pnpm run dev` | Build and start once |
 | `pnpm run start:stdio` | STDIO entry for local MCP hosts |

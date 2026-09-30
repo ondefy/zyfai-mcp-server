@@ -1,0 +1,10 @@
+{
+  "watch": [
+    "build",
+    "../zyfai-sdk/dist/index.js",
+    "../zyfai-sdk/dist/index.mjs"
+  ],
+  "ext": "js,mjs",
+  "delay": 2500,
+  "exec": "node build/index.js"
+}
