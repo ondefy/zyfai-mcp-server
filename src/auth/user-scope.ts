@@ -1,12 +1,10 @@
 import type { SupportedAsset } from "@zyfai/sdk";
-import { config } from "../config/env.js";
 import type { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import { requireMcpAuth } from "./request-context.js";
 
+/** Personal and write tools always need a user session, including when HTTP auth is optional. */
 export function requireAuthForTool(): void {
-  if (config.mcpAuthRequired) {
-    requireMcpAuth();
-  }
+  requireMcpAuth();
 }
 
 export function authenticatedEoa(): string {

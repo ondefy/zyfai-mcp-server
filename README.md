@@ -56,7 +56,7 @@ Copy [`.env.example`](.env.example). Common variables:
 | Variable | Purpose |
 | --- | --- |
 | `ZYFAI_API_KEY` | Partner SDK key (required for live API calls) |
-| `MCP_AUTH_REQUIRED` | `true` in production; personal tools need OAuth. `false` allows unauthenticated HTTP only for `get-available-protocols` and `find_opportunities` |
+| `MCP_AUTH_REQUIRED` | `true` in production: every `/mcp` request needs a bearer. `false`: missing bearer is anonymous (discovery tools only). A supplied bearer is validated in both modes. Protected tools without a session return `401` |
 | `PORT` / `HOST` / `ALLOWED_ORIGINS` | HTTP server |
 
 Full list and backend URL overrides: `.env.example` and [`AGENTS.md`](AGENTS.md#environment).
@@ -69,7 +69,6 @@ Full list and backend URL overrides: `.env.example` and [`AGENTS.md`](AGENTS.md#
 | `pnpm run test:integration` | Opt-in end-to-end MCP tests (`env.test.example` → `.env.test`; see `AGENTS.md`) |
 | `pnpm start` | HTTP server (`build/index.js`) |
 | `pnpm run dev` | Build and start once |
-| `pnpm run start:stdio` | STDIO entry for local MCP hosts |
 
 ## Related
 

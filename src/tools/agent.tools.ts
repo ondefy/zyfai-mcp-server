@@ -142,7 +142,6 @@ export function registerAgentTools(
     READ_TOOL_ANNOTATIONS,
     async ({ strategy, chainId }) => {
       try {
-        requireReadScope();
         const response =
           strategy === "conservative"
             ? await zyfiApi.getConservativeOpportunities(chainId)
@@ -166,7 +165,6 @@ export function registerAgentTools(
     READ_TOOL_ANNOTATIONS,
     async ({ chainId }) => {
       try {
-        requireReadScope();
         const [conservative, aggressive] = await Promise.all([
           zyfiApi.getConservativeOpportunities(chainId),
           zyfiApi.getAggressiveOpportunities(chainId),

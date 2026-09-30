@@ -33,7 +33,10 @@ export const config = {
   executionApiUrl: process.env.ZYFAI_EXECUTION_API_URL?.replace(/\/$/, ""),
   dataApiUrl: process.env.ZYFAI_DATA_API_URL?.replace(/\/$/, ""),
 
-  /** When true, /mcp requires Authorization: Bearer (MCP OAuth JWT). */
+  /**
+   * When true, every /mcp request needs a bearer.
+   * When false, a missing bearer is anonymous. A supplied bearer is still validated.
+   */
   mcpAuthRequired:
     process.env.MCP_AUTH_REQUIRED === "1" ||
     process.env.MCP_AUTH_REQUIRED === "true",

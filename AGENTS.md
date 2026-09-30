@@ -12,17 +12,15 @@ When cloned inside [zyfai-workspace](https://github.com/ondefy/zyfai-workspace),
 index.ts → src/routes/http.routes.ts → src/tools/* → ZyfaiApiService → ZyfaiSDK
 ```
 
-- **HTTP:** `index.ts` (default `PORT` 3005).
-- **STDIO:** `index-stdio.ts` for local Claude Desktop-style hosts.
-- **Proxy:** `proxy-server.ts` bridges stdio to a remote `/mcp` URL.
+- **HTTP:** `index.ts` (default `PORT` 3005). Streamable HTTP is the only supported transport. OAuth challenges are HTTP `401` plus `WWW-Authenticate`, which STDIO cannot express, so the old stdio and proxy entrypoints are not part of this server.
 
-Partner `ZYFAI_API_KEY` backs unauthenticated **`find_opportunities`** when `MCP_AUTH_REQUIRED=false`. Authenticated reads and writes use MCP OAuth: bearer → delegated agent JWT via [`src/auth/session-credential.ts`](src/auth/session-credential.ts) and [`ZyfaiApiService.sdkForUserScoped`](src/services/zyfai-api.service.ts). Legacy **`get-available-protocols`** registers only when `MCP_REGISTER_LEGACY_PROTOCOL_TOOLS=true`.
+Partner `ZYFAI_API_KEY` backs anonymous discovery: **`find_opportunities`**, **`compare_opportunities`**, and legacy **`get-available-protocols`** (only when `MCP_REGISTER_LEGACY_PROTOCOL_TOOLS=true`). Authenticated reads and writes use MCP OAuth: bearer → delegated agent JWT via [`src/auth/session-credential.ts`](src/auth/session-credential.ts) and [`ZyfaiApiService.sdkForUserScoped`](src/services/zyfai-api.service.ts).
 
 ## Authentication and tenancy
 
 - HTTP OAuth: [`src/middleware/mcp-auth.middleware.ts`](src/middleware/mcp-auth.middleware.ts) + [`src/auth/request-context.ts`](src/auth/request-context.ts).
 - Personal tools resolve wallets from the session only ([`src/auth/user-scope.ts`](src/auth/user-scope.ts)): EOA from the token for portfolio/positions; smart wallet from `getUserDetails()` for history, earnings, and rebalance tier. **Never** accept a foreign `userAddress` / `walletAddress` on MCP tools.
-- When `MCP_AUTH_REQUIRED=true`, every `/mcp` request needs a bearer. When `false`, partner-key discovery tools (`find_opportunities`) work without a user session; personal portfolio tools still require OAuth when auth is on.
+- `MCP_AUTH_REQUIRED` controls whether a bearer is mandatory, not whether a bearer is processed. A supplied bearer is always verified and becomes the user context. A missing bearer with auth required is `401` for the whole `/mcp` endpoint. A missing bearer with auth optional stays anonymous: public discovery tools run, and a protected `tools/call` returns `401` with `WWW-Authenticate` so the host can start OAuth. Personal tools never run without that session.
 
 ## Environment
 
@@ -54,7 +52,6 @@ pnpm run build
 pnpm start        # production HTTP server (build/index.js)
 pnpm run dev      # build + start (one shot)
 pnpm run dev:watch # tsc -w + nodemon (single compile pass); restarts on MCP build or linked SDK entry files
-pnpm run start:stdio
 ```
 
 ### Local SDK + live reload (from workspace root)

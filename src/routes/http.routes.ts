@@ -5,14 +5,15 @@
 import { Router, Request, Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
+  authorizeMcpToolCall,
   insufficientScopeWwwAuthenticate,
-  requiredScopeForTool,
 } from "../auth/tool-scope.js";
 import { runWithMcpAuth } from "../auth/request-context.js";
 import { config } from "../config/env.js";
 import { createMcpServer } from "../create-mcp-server.js";
 import {
   mcpAuthMiddleware,
+  wwwAuthenticateHeader,
   type RequestWithMcpAuth,
 } from "../middleware/mcp-auth.middleware.js";
 import type { ZyfaiApiService } from "../services/zyfai-api.service.js";
@@ -24,23 +25,22 @@ async function handleMcpRequest(
   body?: unknown,
 ) {
   const mcpAuth = (req as RequestWithMcpAuth).mcpAuth;
-  if (mcpAuth && config.mcpAuthRequired && body && typeof body === "object") {
+  if (body && typeof body === "object" && !Array.isArray(body)) {
     const rpc = body as { method?: string; params?: { name?: string } };
     if (rpc.method === "tools/call") {
-      const required = requiredScopeForTool(rpc.params?.name ?? "");
-      if (required) {
-        const scopes = mcpAuth.scope.split(/\s+/).filter(Boolean);
-        if (!scopes.includes(required)) {
-          res.setHeader(
-            "WWW-Authenticate",
-            insufficientScopeWwwAuthenticate(),
-          );
-          res.status(403).json({
-            error: "insufficient_scope",
-            message: `Missing scope ${required}`,
-          });
-          return;
-        }
+      const decision = authorizeMcpToolCall(rpc.params?.name ?? "", mcpAuth);
+      if (!decision.ok) {
+        res.setHeader(
+          "WWW-Authenticate",
+          decision.status === 401
+            ? wwwAuthenticateHeader()
+            : insufficientScopeWwwAuthenticate(),
+        );
+        res.status(decision.status).json({
+          error: decision.error,
+          message: decision.message,
+        });
+        return;
       }
     }
   }

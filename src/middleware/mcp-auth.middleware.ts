@@ -5,33 +5,45 @@ import { config } from "../config/env.js";
 
 export type RequestWithMcpAuth = Request & { mcpAuth?: McpRequestAuth };
 
-function wwwAuthenticateHeader(): string {
+export function wwwAuthenticateHeader(): string {
   const resourceMetadata = `${config.mcpResourceUrl}/.well-known/oauth-protected-resource`;
   return `Bearer realm="zyfai-mcp", resource_metadata="${resourceMetadata}"`;
 }
 
+function unauthorized(
+  res: Response,
+  message: string,
+) {
+  res.setHeader("WWW-Authenticate", wwwAuthenticateHeader());
+  return res.status(401).json({
+    error: "unauthorized",
+    message,
+  });
+}
+
 /**
- * Validates MCP OAuth bearer tokens and attaches auth to async local storage.
+ * MCP_AUTH_REQUIRED controls whether a bearer is mandatory.
+ * A supplied bearer is always validated and attached as user context.
+ * No bearer plus auth required is 401. No bearer plus auth optional stays anonymous.
  */
 export function mcpAuthMiddleware(
   req: Request,
   res: Response,
   next: NextFunction,
 ) {
-  if (!config.mcpAuthRequired) {
-    return next();
-  }
-
   const header = req.headers.authorization;
   if (!header?.startsWith("Bearer ")) {
-    res.setHeader("WWW-Authenticate", wwwAuthenticateHeader());
-    return res.status(401).json({
-      error: "unauthorized",
-      message: "Missing or invalid Authorization bearer token",
-    });
+    if (!config.mcpAuthRequired) {
+      return next();
+    }
+    return unauthorized(res, "Missing or invalid Authorization bearer token");
   }
 
   const token = header.slice("Bearer ".length).trim();
+  if (!token) {
+    return unauthorized(res, "Missing or invalid Authorization bearer token");
+  }
+
   try {
     const payload = verifyMcpAccessToken(token);
     (req as RequestWithMcpAuth).mcpAuth = {
@@ -44,10 +56,9 @@ export function mcpAuthMiddleware(
     };
     return next();
   } catch (error) {
-    res.setHeader("WWW-Authenticate", wwwAuthenticateHeader());
-    return res.status(401).json({
-      error: "unauthorized",
-      message: error instanceof Error ? error.message : "Invalid token",
-    });
+    return unauthorized(
+      res,
+      error instanceof Error ? error.message : "Invalid token",
+    );
   }
 }

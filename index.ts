@@ -27,7 +27,9 @@ async function main() {
       console.log(`   - Unified /mcp endpoint for all operations`);
       console.log(`   - Session-based with Mcp-Session-Id header`);
       console.log(`   - Supports streaming responses`);
-      console.log(`\n🔧 MCP auth required: ${config.mcpAuthRequired}`);
+      console.log(
+        `\n🔧 MCP auth required: ${config.mcpAuthRequired} (bearer validated when present)`,
+      );
       console.log(
         `   Tools: agent (account, portfolio, deposits, mandate),`,
       );

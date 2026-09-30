@@ -91,6 +91,7 @@ export function applyIntegrationServerEnv(): void {
   }
 
   process.env.MCP_AUTH_REQUIRED = "false";
+  process.env.MCP_REGISTER_LEGACY_PROTOCOL_TOOLS = "true";
 }
 
 export type IntegrationSpendProfile = "readonly" | "spends_funds";

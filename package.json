@@ -39,7 +39,6 @@
     "test:integration:local": "ZYFAI_ENV=local pnpm dlx wait-on tcp:127.0.0.1:3000 -t 120000 -l && pnpm run test:integration",
     "build": "tsc",
     "start": "node build/index.js",
-    "start:stdio": "node build/index-stdio.js",
     "dev": "tsc && node build/index.js",
     "dev:watch": "sh scripts/dev-watch.sh",
     "clean": "rm -rf build"

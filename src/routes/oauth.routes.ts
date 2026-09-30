@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { protectedResourceScopes } from "../auth/tool-scope.js";
 import { config } from "../config/env.js";
 
 export function createOAuthRoutes(): Router {
@@ -14,7 +15,7 @@ export function createOAuthRoutes(): Router {
       authorization_servers: [
         `${config.mcpAuthorizationServer}/api/v1/oauth`,
       ],
-      scopes_supported: ["mcp:tools:read"],
+      scopes_supported: protectedResourceScopes(config.mcpWriteToolsEnabled),
       bearer_methods_supported: ["header"],
     });
   });
