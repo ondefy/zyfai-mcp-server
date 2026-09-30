@@ -4,6 +4,11 @@
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  chainIdSchema,
+  optionalChainIdSchema,
+  CHAIN_ID_DESCRIPTION,
+} from "../config/chains.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
 export function registerUserDataTools(
@@ -15,11 +20,7 @@ export function registerUserDataTools(
     "Get transaction history for a wallet",
     {
       walletAddress: z.string().describe("The smart wallet address"),
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
+      chainId: chainIdSchema.describe(CHAIN_ID_DESCRIPTION),
       limit: z
         .number()
         .optional()
@@ -71,11 +72,7 @@ export function registerUserDataTools(
     "Get the first topup (deposit) information for a wallet",
     {
       walletAddress: z.string().describe("The smart wallet address"),
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
+      chainId: chainIdSchema.describe(CHAIN_ID_DESCRIPTION),
     },
     async ({ walletAddress, chainId }) => {
       try {
@@ -111,12 +108,9 @@ export function registerUserDataTools(
       userAddress: z
         .string()
         .describe("The user's EOA address to get positions and portfolio for"),
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .optional()
-        .describe(
-          "Optional chain ID to filter positions and portfolio (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
+      chainId: optionalChainIdSchema.describe(
+        `Optional chain ID to filter positions and portfolio. ${CHAIN_ID_DESCRIPTION}`
+      ),
     },
     async ({ userAddress, chainId }) => {
       try {

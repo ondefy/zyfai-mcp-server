@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { optionalChainIdSchema, CHAIN_ID_DESCRIPTION } from "../config/chains.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
 export function registerOpportunitiesTools(
@@ -14,12 +15,9 @@ export function registerOpportunitiesTools(
     "get-conservative-opportunities",
     "Get safe (low risk) DeFi opportunities suitable for conservative investors",
     {
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .optional()
-        .describe(
-          "Optional chain ID to filter opportunities (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
+      chainId: optionalChainIdSchema.describe(
+        `Optional chain ID to filter opportunities. ${CHAIN_ID_DESCRIPTION}`
+      ),
     },
     async ({ chainId }) => {
       try {
@@ -52,12 +50,9 @@ export function registerOpportunitiesTools(
     "get-aggressive-opportunities",
     "Get degen (high-risk, high-reward) yield strategies for aggressive investors",
     {
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .optional()
-        .describe(
-          "Optional chain ID to filter strategies (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
+      chainId: optionalChainIdSchema.describe(
+        `Optional chain ID to filter strategies. ${CHAIN_ID_DESCRIPTION}`
+      ),
     },
     async ({ chainId }) => {
       try {

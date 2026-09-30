@@ -12,7 +12,7 @@ You can make use of the official Zyfai mcp server deployed [here](https://mcp.zy
 - **Analytics & Metrics** - TVL, volume, wallet analytics, and more
 - **Earnings Tracking** - Onchain earnings, daily earnings, APY history
 - **User Data** - Transaction history, positions, first topup info
-- **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
+- **Multi-Chain Support** - Ethereum Mainnet (1), Base (8453), Arbitrum (42161)
 - **Streamable HTTP transport** - Modern unified `/mcp` endpoint (MCP 2024-11-05+)
 - Session-based with `Mcp-Session-Id` header support
 - Express.js server with CORS support
@@ -142,7 +142,7 @@ Add to your Cursor MCP settings:
 }
 ```
 
-### Using with Cursor / Other MCP Clients
+### Other MCP clients
 
 The server uses Streamable HTTP transport, making it accessible from web browsers and HTTP clients:
 
@@ -188,250 +188,13 @@ npx @modelcontextprotocol/inspector
 
 Then enter the endpoint URL: `https://mcp.zyf.ai/mcp`
 
-### Building LLM-Powered DeFi Apps with Zyfai MCP
+### Building LLM-powered DeFi apps
 
-For developers building **AI-powered DeFi agents** that can autonomously discover yield opportunities, analyze portfolios, and provide intelligent recommendations, here's how to integrate the Zyfai MCP server with your LLM application.
+For agent integration patterns, supported chains, auth model, and the full tool catalogue, see the [Zyfai MCP Server guide on docs.zyf.ai](https://docs.zyf.ai/docs/sdk/mcp-server).
 
-**Installation:**
+For deposits, withdrawals, and execution, use [@zyfai/sdk](https://sdk.zyf.ai/) directly or the [Agent Quickstart](https://docs.zyf.ai/docs/sdk/agent-quickstart).
 
-```bash
-# For Anthropic Claude
-npm install @modelcontextprotocol/sdk @anthropic-ai/sdk
-
-# For OpenAI GPT
-npm install @modelcontextprotocol/sdk openai
-
-# Or use pnpm
-pnpm add @modelcontextprotocol/sdk openai
-```
-
-**Complete Example - AI DeFi Yield Optimizer:**
-
-This example shows how to build an LLM agent that uses Zyfai MCP server to create an intelligent DeFi assistant. Choose between OpenAI or Anthropic based on your preference.
-
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import OpenAI from "openai";
-
-/**
- * Initialize Zyfai MCP Client with Streamable HTTP
- */
-async function initializeZyfaiMCP() {
-  const transport = new StreamableHTTPClientTransport(
-    new URL("https://mcp.zyf.ai/mcp")
-  );
-
-  const client = new Client(
-    {
-      name: "defi-ai-agent",
-      version: "1.0.0",
-    },
-    {
-      capabilities: {},
-    }
-  );
-
-  await client.connect(transport);
-  console.log("Connected to Zyfai MCP Server (Streamable HTTP)");
-
-  return client;
-}
-
-/**
- * DeFi AI Agent with OpenAI - Combines LLM reasoning with Zyfai MCP tools
- */
-class DeFiAIAgent {
-  private zyfaiClient: Client;
-  private openai: OpenAI;
-  private availableTools: any[];
-
-  constructor(zyfaiClient: Client, openaiApiKey: string) {
-    this.zyfaiClient = zyfaiClient;
-    this.openai = new OpenAI({ apiKey: openaiApiKey });
-    this.availableTools = [];
-  }
-
-  /**
-   * Initialize agent by discovering available Zyfai tools
-   */
-  async initialize() {
-    const toolsResponse = await this.zyfaiClient.listTools();
-
-    // Convert MCP tool schema to OpenAI function calling format
-    this.availableTools = toolsResponse.tools.map((tool) => ({
-      type: "function",
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.inputSchema,
-      },
-    }));
-
-    console.log(
-      `Agent initialized with ${this.availableTools.length} Zyfai tools`
-    );
-  }
-
-  /**
-   * Execute a tool call via Zyfai MCP
-   */
-  async executeTool(toolName: string, toolInput: any) {
-    console.log(`Executing: ${toolName}`, toolInput);
-
-    const result = await this.zyfaiClient.callTool({
-      name: toolName,
-      arguments: toolInput,
-    });
-
-    // Extract text content from MCP response
-    const content = result.content
-      .filter((item: any) => item.type === "text")
-      .map((item: any) => item.text)
-      .join("\n");
-
-    return content;
-  }
-
-  /**
-   * Chat with the AI agent - it can use Zyfai tools automatically
-   */
-  async chat(userMessage: string, conversationHistory: any[] = []) {
-    const messages = [
-      ...conversationHistory,
-      {
-        role: "user",
-        content: userMessage,
-      },
-    ];
-
-    let response = await this.openai.chat.completions.create({
-      model: "gpt-4o", // or "gpt-4-turbo", "gpt-3.5-turbo"
-      messages: messages,
-      tools: this.availableTools,
-      tool_choice: "auto",
-    });
-
-    let message = response.choices[0].message;
-    console.log(`Response finish reason: ${response.choices[0].finish_reason}`);
-
-    // Handle tool calls iteratively
-    while (message.tool_calls && message.tool_calls.length > 0) {
-      // Add assistant's response to conversation
-      messages.push(message);
-
-      // Execute each tool call
-      for (const toolCall of message.tool_calls) {
-        const toolName = toolCall.function.name;
-        const toolArgs = JSON.parse(toolCall.function.arguments);
-
-        // Execute the tool via Zyfai MCP
-        const toolResult = await this.executeTool(toolName, toolArgs);
-
-        // Add tool result to conversation
-        messages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: toolResult,
-        });
-      }
-
-      // Get next response from OpenAI
-      response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: messages,
-        tools: this.availableTools,
-        tool_choice: "auto",
-      });
-
-      message = response.choices[0].message;
-      console.log(
-        `Continued finish reason: ${response.choices[0].finish_reason}`
-      );
-    }
-
-    // Extract final text response
-    const finalResponse = message.content || "";
-
-    return {
-      response: finalResponse,
-      conversationHistory: [...messages, message],
-    };
-  }
-}
-
-/**
- * Example Usage: AI-Powered DeFi Scenarios
- */
-async function runDeFiAgent() {
-  // Initialize Zyfai MCP client
-  const zyfaiClient = await initializeZyfaiMCP();
-
-  // Create AI agent with Zyfai tools (using OpenAI)
-  const agent = new DeFiAIAgent(zyfaiClient, process.env.OPENAI_API_KEY!);
-  await agent.initialize();
-
-  // Scenario 1: Find best yield opportunities
-  console.log("\nScenario 1: Finding best yields\n");
-  const result1 = await agent.chat(
-    "I have $10,000 USDC on Base chain. Find me the safest yield opportunities with at least 4% APY. Compare the top 3 options and recommend the best one considering TVL and historical performance."
-  );
-  console.log("Agent:", result1.response);
-
-  // Scenario 2: Portfolio analysis with multi-chain context
-  console.log("\nScenario 2: Portfolio Analysis\n");
-  const result2 = await agent.chat(
-    "Analyze the portfolio for wallet 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb across Base and Arbitrum. Calculate total earnings, identify underperforming positions, and suggest rebalancing strategies.",
-    result1.conversationHistory
-  );
-  console.log("Agent:", result2.response);
-}
-
-// Run examples
-console.log("Starting AI DeFi Agent Examples...\n");
-
-runDeFiAgent()
-  .then(() => {
-    console.log("\nAll scenarios completed!");
-  })
-  .catch((error) => {
-    console.error("Error:", error);
-  });
-```
-
-**Example Conversation:**
-
-```
-User: "I have 5000 USDC on Base. What's my best option?"
-
-Agent: *Calls get-conservative-opportunities tool*
-       *Calls get-available-protocols tool*
-       *Analyzes results*
-
-Agent: "Based on current data, I recommend Aave V3 on Base:
-       - APY: 4.8% (stable over 30 days)
-       - TVL: $45M (high liquidity)
-       - Risk: Low (audited, established protocol)
-       - Expected monthly return: ~$20
-
-       Alternative: Compound offers 4.2% APY if you prefer even
-       more battle-tested protocols."
-
-User: "How has Aave performed historically?"
-
-Agent: *Calls get-daily-apy-history tool*
-       *Calls get-apy-per-strategy tool*
-
-Agent: "Aave on Base has shown consistent performance:
-       - 30-day average APY: 4.6%
-       - Lowest: 4.1%, Highest: 5.2%
-       - Trend: Stable with slight upward movement
-       - Active wallets: 2,847 (growing ecosystem)
-
-       This is a solid choice for stable, predictable yields."
-```
-
-For more advanced integrations, combine with direct [@zyfai/sdk](https://sdk.zyf.ai/) integration for transaction execution
+Agent and contributor conventions for this repository: [`AGENTS.md`](AGENTS.md).
 
 ## Getting Started
 
@@ -513,6 +276,7 @@ Configure your server using environment variables:
 
 ## Available Scripts
 
+- `pnpm run check` - Typecheck and build (canonical validation)
 - `pnpm run build` - Compile TypeScript to JavaScript
 - `pnpm start` - Start the production Streamable HTTP server (`build/index.js`)
 - `pnpm run start:stdio` - Start the STDIO server for Claude Desktop (`build/index-stdio.js`)

@@ -29,6 +29,7 @@
   },
   "type": "module",
   "scripts": {
+    "check": "tsc --noEmit && pnpm run build",
     "build": "tsc",
     "start": "node build/index.js",
     "start:stdio": "node build/index-stdio.js",
