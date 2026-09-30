@@ -8,8 +8,13 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zyfai-mcp-server
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: zyfai-mcp-server
 
       - uses: actions/checkout@v4
         with:
@@ -25,6 +30,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          cache-dependency-path: zyfai-mcp-server/pnpm-lock.yaml
 
       - name: Build @zyfai/sdk
         working-directory: zyfai-sdk
