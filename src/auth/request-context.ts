@@ -5,6 +5,7 @@ export type McpRequestAuth = {
   eoa: string;
   scope: string;
   sessionId: string;
+  clientId: string;
   mcpAccessToken: string;
 };
 
@@ -38,5 +39,5 @@ export function assertEoaMatches(userAddress: string): void {
 export function scopeIncludes(required: string): boolean {
   const auth = requireMcpAuth();
   const scopes = auth.scope.split(/\s+/).filter(Boolean);
-  return scopes.includes(required) || scopes.includes("mcp:tools:write");
+  return scopes.includes(required);
 }

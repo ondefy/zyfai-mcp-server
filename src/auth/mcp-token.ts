@@ -7,6 +7,7 @@ export type McpAccessTokenPayload = {
   scope: string;
   sid: string;
   aud?: string;
+  client_id?: string;
 };
 
 export function verifyMcpAccessToken(
@@ -29,8 +30,10 @@ export function verifyMcpAccessToken(
   }
   if (
     config.mcpResourceUrl &&
-    payload.aud &&
-    payload.aud !== config.mcpResourceUrl
+    (!payload.aud ||
+      (payload.aud !== config.mcpResourceUrl &&
+        payload.aud !== `${config.mcpResourceUrl.replace(/\/$/, "")}/mcp` &&
+        payload.aud !== config.mcpResourceUrl.replace(/\/$/, "")))
   ) {
     throw new Error("MCP token audience mismatch");
   }

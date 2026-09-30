@@ -39,6 +39,7 @@ export function mcpAuthMiddleware(
       eoa: payload.eoa,
       scope: payload.scope || "mcp:tools:read",
       sessionId: payload.sid,
+      clientId: payload.client_id || "unknown-client",
       mcpAccessToken: token,
     };
     return next();

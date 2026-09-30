@@ -16,13 +16,13 @@ index.ts → src/routes/http.routes.ts → src/tools/* → ZyfaiApiService → Z
 - **STDIO:** `index-stdio.ts` for local Claude Desktop-style hosts.
 - **Proxy:** `proxy-server.ts` bridges stdio to a remote `/mcp` URL.
 
-Partner `ZYFAI_API_KEY` backs **`get-available-protocols`** and **`find_opportunities`**. All other reads and writes use per-request OAuth: MCP bearer → Zyfai user JWT via [`src/auth/session-credential.ts`](src/auth/session-credential.ts) and [`ZyfaiApiService.getAuthenticatedSDK`](src/services/zyfai-api.service.ts).
+Partner `ZYFAI_API_KEY` backs unauthenticated **`find_opportunities`** when `MCP_AUTH_REQUIRED=false`. Authenticated reads and writes use MCP OAuth: bearer → delegated agent JWT via [`src/auth/session-credential.ts`](src/auth/session-credential.ts) and [`ZyfaiApiService.sdkForUserScoped`](src/services/zyfai-api.service.ts). Legacy **`get-available-protocols`** registers only when `MCP_REGISTER_LEGACY_PROTOCOL_TOOLS=true`.
 
 ## Authentication and tenancy
 
 - HTTP OAuth: [`src/middleware/mcp-auth.middleware.ts`](src/middleware/mcp-auth.middleware.ts) + [`src/auth/request-context.ts`](src/auth/request-context.ts).
 - Personal tools resolve wallets from the session only ([`src/auth/user-scope.ts`](src/auth/user-scope.ts)): EOA from the token for portfolio/positions; smart wallet from `getUserDetails()` for history, earnings, and rebalance tier. **Never** accept a foreign `userAddress` / `walletAddress` on MCP tools.
-- When `MCP_AUTH_REQUIRED=true`, every `/mcp` request needs a bearer. When `false`, only the two partner-key discovery tools work without a user session.
+- When `MCP_AUTH_REQUIRED=true`, every `/mcp` request needs a bearer. When `false`, partner-key discovery tools (`find_opportunities`) work without a user session; personal portfolio tools still require OAuth when auth is on.
 
 ## Environment
 

@@ -21,8 +21,6 @@ import { config } from "../config/env.js";
 import { exchangeMcpSessionCredential } from "../auth/session-credential.js";
 import { requireMcpAuth } from "../auth/request-context.js";
 
-const MCP_SERVER_KEY_HEADER = "x-mcp-server-key";
-
 export class ZyfaiApiService {
   private readonly baseConfig: SDKConfig;
 
@@ -48,17 +46,6 @@ export class ZyfaiApiService {
       userId: auth.userId,
       eoa: auth.eoa as `0x${string}`,
     });
-    const serverKey = config.mcpServerExchangeSecret;
-    if (serverKey) {
-      const sdkWithHeaders = sdk as ZyfaiSDK & {
-        setExecutionRequestHeaders?: (
-          headers: Record<string, string>,
-        ) => void;
-      };
-      sdkWithHeaders.setExecutionRequestHeaders?.({
-        [MCP_SERVER_KEY_HEADER]: serverKey,
-      });
-    }
     return sdk;
   }
 
@@ -195,20 +182,19 @@ export class ZyfaiApiService {
   }
 
   async getAgentMandate() {
+    const auth = requireMcpAuth();
     const sdk = await this.sdkForUserScoped();
-    return sdk.getAgentMandate();
+    return sdk.getAgentMandate(auth.clientId);
   }
 
-  async setAgentMandate(
-    request: import("@zyfai/sdk").UpsertAgentMandateRequest,
+  async withdrawFunds(
+    userAddress: string,
+    chainId: SupportedChainId,
+    amount?: string,
+    tokenSymbol?: string,
   ) {
     const sdk = await this.sdkForUserScoped();
-    return sdk.setAgentMandate(request);
-  }
-
-  async revokeAgentMandate() {
-    const sdk = await this.sdkForUserScoped();
-    return sdk.revokeAgentMandate();
+    return sdk.withdrawFunds(userAddress, chainId, amount, tokenSymbol);
   }
 }
 

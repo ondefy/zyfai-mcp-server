@@ -1,6 +1,18 @@
-export function toolJsonContent(data: unknown) {
+export function toolJsonContent(data: unknown, summary?: string) {
+  const text =
+    summary ??
+    (typeof data === "object" && data !== null && "summary" in data
+      ? String((data as { summary?: string }).summary)
+      : undefined) ??
+    "OK";
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+    content: [
+      {
+        type: "text" as const,
+        text: summary ?? JSON.stringify(data, null, 2),
+      },
+    ],
+    structuredContent: data as Record<string, unknown>,
   };
 }
 

@@ -5,17 +5,16 @@ export function createOAuthRoutes(): Router {
   const router = Router();
 
   router.get("/.well-known/oauth-protected-resource", (_req, res) => {
+    const resourceBase = config.mcpResourceUrl.replace(/\/$/, "");
+    const resource = resourceBase.endsWith("/mcp")
+      ? resourceBase
+      : `${resourceBase}/mcp`;
     res.json({
-      resource: config.mcpResourceUrl,
+      resource,
       authorization_servers: [
         `${config.mcpAuthorizationServer}/api/v1/oauth`,
       ],
-      scopes_supported: [
-        "mcp:tools:read",
-        "mcp:tools:write",
-        "mcp:tools:write:configure",
-        "mcp:tools:write:deposit",
-      ],
+      scopes_supported: ["mcp:tools:read"],
       bearer_methods_supported: ["header"],
     });
   });

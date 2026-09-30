@@ -51,6 +51,23 @@ export const config = {
     process.env.MCP_OAUTH_ISSUER?.replace(/\/$/, "") ||
     process.env.API_PUBLIC_URL?.replace(/\/$/, "") ||
     "https://api.zyf.ai",
+
+  /** When true, register financial write tools (enter/exit/configure). Default off for public plugin. */
+  mcpWriteToolsEnabled:
+    process.env.MCP_WRITE_TOOLS_ENABLED === "1" ||
+    process.env.MCP_WRITE_TOOLS_ENABLED === "true",
+
+  /** Legacy catalog tool for integration tests only. */
+  mcpRegisterLegacyProtocolTools:
+    process.env.MCP_REGISTER_LEGACY_PROTOCOL_TOOLS === "1" ||
+    process.env.MCP_REGISTER_LEGACY_PROTOCOL_TOOLS === "true",
+
+  /** OpenAI domain verification token (plain text response). */
+  openaiAppsChallengeToken: process.env.OPENAI_APPS_CHALLENGE_TOKEN,
+
+  mcpAppsEnabled:
+    process.env.MCP_APPS_ENABLED === "1" ||
+    process.env.MCP_APPS_ENABLED === "true",
 } as const;
 
 function isProductionNodeEnv(): boolean {

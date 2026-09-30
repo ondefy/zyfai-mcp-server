@@ -1,10 +1,10 @@
 /**
- * Agent-oriented MCP tools (stable intent surface).
+ * Portable read/preview MCP tools (host-agnostic).
  */
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { scopeIncludes } from "../auth/request-context.js";
+import { getMcpAuth, scopeIncludes } from "../auth/request-context.js";
 import {
   authenticatedEoa,
   requireAuthForTool,
@@ -14,8 +14,54 @@ import {
   optionalChainIdSchema,
   CHAIN_ID_DESCRIPTION,
 } from "../config/chains.js";
+import { createEnterActionIntent } from "../services/enter-action-intent.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { buildOpportunityId } from "./opportunity-id.js";
+import { READ_TOOL_ANNOTATIONS } from "./tool-annotations.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
+
+function requireReadScope(): void {
+  const auth = getMcpAuth();
+  if (!auth) {
+    return;
+  }
+  if (!scopeIncludes("mcp:tools:read")) {
+    throw new Error("Missing scope mcp:tools:read");
+  }
+}
+
+function enrichOpportunitiesPayload(
+  data: unknown,
+  strategy: string,
+): unknown {
+  if (Array.isArray(data)) {
+    return data.map((row) => {
+      const r = row as Record<string, unknown>;
+      const chainId = Number(r.chainId ?? r.chain_id ?? 0);
+      return {
+        ...r,
+        opportunityId: buildOpportunityId({
+          chainId,
+          poolId: String(r.poolId ?? r.pool_id ?? ""),
+          poolAddress: String(r.poolAddress ?? r.pool_address ?? ""),
+          protocol: String(r.protocol ?? r.protocolName ?? ""),
+          strategy,
+        }),
+      };
+    });
+  }
+  if (data && typeof data === "object" && "opportunities" in data) {
+    const container = data as { opportunities: unknown[] };
+    return {
+      ...data,
+      opportunities: enrichOpportunitiesPayload(
+        container.opportunities,
+        strategy,
+      ),
+    };
+  }
+  return data;
+}
 
 export function registerAgentTools(
   server: McpServer,
@@ -23,13 +69,15 @@ export function registerAgentTools(
 ) {
   server.tool(
     "get_account",
-    "Get the authenticated user's Zyfai profile (strategy, chains, smart wallet). Requires MCP OAuth.",
+    "Get the authenticated user's Zyfai profile (strategy, chains, smart wallet).",
     {},
+    READ_TOOL_ANNOTATIONS,
     async () => {
       try {
         requireAuthForTool();
+        requireReadScope();
         const response = await zyfiApi.getUserDetails("USDC");
-        return toolJsonContent(response);
+        return toolJsonContent(response, "Zyfai account profile");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -42,12 +90,14 @@ export function registerAgentTools(
     "get_portfolio",
     "Portfolio for the authenticated user (positions, idle balances, async redemptions).",
     {},
+    READ_TOOL_ANNOTATIONS,
     async () => {
       try {
         requireAuthForTool();
+        requireReadScope();
         const eoa = authenticatedEoa();
         const response = await zyfiApi.getPortfolio(eoa);
-        return toolJsonContent(response);
+        return toolJsonContent(response, "Portfolio summary");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -64,12 +114,14 @@ export function registerAgentTools(
         `Optional chain ID. ${CHAIN_ID_DESCRIPTION}`,
       ),
     },
+    READ_TOOL_ANNOTATIONS,
     async ({ chainId }) => {
       try {
         requireAuthForTool();
+        requireReadScope();
         const eoa = authenticatedEoa();
         const response = await zyfiApi.getPositions(eoa, chainId);
-        return toolJsonContent(response);
+        return toolJsonContent(response, "Active positions");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -87,13 +139,16 @@ export function registerAgentTools(
         .default("conservative"),
       chainId: executionChainIdSchema.optional(),
     },
+    READ_TOOL_ANNOTATIONS,
     async ({ strategy, chainId }) => {
       try {
+        requireReadScope();
         const response =
           strategy === "conservative"
             ? await zyfiApi.getConservativeOpportunities(chainId)
             : await zyfiApi.getAggressiveOpportunities(chainId);
-        return toolJsonContent(response);
+        const enriched = enrichOpportunitiesPayload(response, strategy);
+        return toolJsonContent(enriched, `${strategy} opportunities`);
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -103,8 +158,41 @@ export function registerAgentTools(
   );
 
   server.tool(
-    "simulate_action",
-    "Simulate best-position allocation for an amount (read-only planning).",
+    "compare_opportunities",
+    "Rank two strategies on the same chain for side-by-side comparison.",
+    {
+      chainId: executionChainIdSchema,
+    },
+    READ_TOOL_ANNOTATIONS,
+    async ({ chainId }) => {
+      try {
+        requireReadScope();
+        const [conservative, aggressive] = await Promise.all([
+          zyfiApi.getConservativeOpportunities(chainId),
+          zyfiApi.getAggressiveOpportunities(chainId),
+        ]);
+        return toolJsonContent(
+          {
+            chainId,
+            conservative: enrichOpportunitiesPayload(
+              conservative,
+              "conservative",
+            ),
+            aggressive: enrichOpportunitiesPayload(aggressive, "aggressive"),
+          },
+          "Strategy comparison",
+        );
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "preview_action",
+    "Simulate where funds would be allocated before any on-chain action.",
     {
       amount: z.number().describe("Amount in USD (human units)"),
       token: z.string().describe("Asset symbol e.g. USDC"),
@@ -115,9 +203,11 @@ export function registerAgentTools(
       strategy: z.enum(["conservative", "aggressive", "yieldmaxxing"]),
       minSplit: z.number().optional(),
     },
+    READ_TOOL_ANNOTATIONS,
     async ({ amount, token, networks, strategy, minSplit }) => {
       try {
         requireAuthForTool();
+        requireReadScope();
         const response = await zyfiApi.simulateBestPositions({
           amount,
           token,
@@ -125,124 +215,23 @@ export function registerAgentTools(
           strategy,
           minSplit,
         });
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
-      } catch (error) {
-        return toolError(
-          error instanceof Error ? error.message : "Unknown error",
-        );
-      }
-    },
-  );
-
-  server.tool(
-    "configure_position",
-    "Update strategy/chains/protocols before funding (JWT write).",
-    {
-      strategy: z.enum(["conservative", "aggressive", "yieldmaxxing"]),
-      chains: z.array(executionChainIdSchema),
-      asset: z.enum(["USDC", "WETH", "EURC", "NVDAc"]).default("USDC"),
-      protocols: z.array(z.string()).optional(),
-      autoSelectProtocols: z.boolean().optional(),
-    },
-    async ({ strategy, chains, asset, protocols, autoSelectProtocols }) => {
-      try {
-        requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write:configure")) {
-          return toolError("Missing scope mcp:tools:write:configure");
-        }
-        const response = await zyfiApi.updateUserProfile({
-          strategy,
-          chains,
-          asset,
-          protocols,
-          autoSelectProtocols,
-        });
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
-      } catch (error) {
-        return toolError(
-          error instanceof Error ? error.message : "Unknown error",
-        );
-      }
-    },
-  );
-
-  server.tool(
-    "prepare_deposit",
-    "Build ERC-20 transfer calldata to fund the Safe; user must sign on-chain.",
-    {
-      chainId: executionChainIdSchema,
-      amount: z.string().describe("Amount in least units (string integer)"),
-      asset: z.enum(["USDC", "WETH", "EURC", "NVDAc"]),
-      strategy: z
-        .enum(["conservative", "aggressive", "yieldmaxxing"])
-        .optional(),
-    },
-    async ({ chainId, amount, asset, strategy }) => {
-      try {
-        requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write:deposit")) {
-          return toolError("Missing scope mcp:tools:write:deposit");
-        }
-        const eoa = authenticatedEoa();
-        const response = await zyfiApi.prepareEnterPosition({
-          userAddress: eoa,
-          chainId,
-          amount,
-          asset,
-          strategy,
-        });
-        return toolJsonContent(response);
-      } catch (error) {
-        return toolError(
-          error instanceof Error ? error.message : "Unknown error",
-        );
-      }
-    },
-  );
-
-  server.tool(
-    "submit_deposit",
-    "Register an on-chain deposit after the user signed the ERC-20 transfer.",
-    {
-      chainId: executionChainIdSchema,
-      txHash: z.string(),
-      amount: z.string(),
-      tokenAddress: z.string().optional(),
-      waitForCredit: z.boolean().optional().default(true),
-    },
-    async ({ chainId, txHash, amount, tokenAddress, waitForCredit }) => {
-      try {
-        requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write:deposit")) {
-          return toolError("Missing scope mcp:tools:write:deposit");
-        }
-        const logged = await zyfiApi.logDeposit(
-          chainId,
-          txHash,
-          amount,
-          tokenAddress,
-        );
-        if (waitForCredit && logged.deposit?.id) {
-          const credited = await zyfiApi.waitForDepositCredit(
-            logged.deposit.id,
+        const auth = getMcpAuth();
+        let actionId: string | undefined;
+        if (auth) {
+          const chainId = Array.isArray(networks) ? networks[0] : networks;
+          actionId = createEnterActionIntent({
+            userId: auth.userId,
+            clientId: auth.clientId,
             chainId,
-          );
-          return {
-            content: [
-              {
-                type: "text",
-                text: JSON.stringify({ logged, credited }, null, 2),
-              },
-            ],
-          };
+            asset: token,
+            amount: String(amount),
+            strategy,
+          });
         }
-        return {
-          content: [{ type: "text", text: JSON.stringify(logged, null, 2) }],
-        };
+        return toolJsonContent(
+          { simulation: response, actionId },
+          "Allocation preview",
+        );
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -252,16 +241,16 @@ export function registerAgentTools(
   );
 
   server.tool(
-    "get_management_permissions",
-    "Get agent autonomy mandate (capital caps, allowed chains/assets, withdraw/rebalance flags).",
+    "get_agent_permissions",
+    "Get the agent mandate for this OAuth client (chains, assets, rebalance/withdraw flags).",
     {},
+    READ_TOOL_ANNOTATIONS,
     async () => {
       try {
         requireAuthForTool();
+        requireReadScope();
         const response = await zyfiApi.getAgentMandate();
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
+        return toolJsonContent(response, "Agent mandate");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -271,47 +260,18 @@ export function registerAgentTools(
   );
 
   server.tool(
-    "set_management_permissions",
-    "Set or update agent autonomy mandate for delegated management.",
-    {
-      maxCapitalUsd: z.string().nullable().optional(),
-      allowedChainIds: z.array(executionChainIdSchema).optional(),
-      allowedAssets: z.array(z.string()).optional(),
-      allowRebalance: z.boolean().optional(),
-      allowWithdraw: z.boolean().optional(),
-      expiresAt: z.string().nullable().optional(),
-    },
-    async (body) => {
-      try {
-        requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write")) {
-          return toolError("Missing scope mcp:tools:write");
-        }
-        const response = await zyfiApi.setAgentMandate(body);
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
-      } catch (error) {
-        return toolError(
-          error instanceof Error ? error.message : "Unknown error",
-        );
-      }
-    },
-  );
-
-  server.tool(
-    "get_deposit_status",
-    "Poll deposit handover/credit lifecycle for a deposit id.",
+    "get_action_status",
+    "Poll deposit handover and credit lifecycle for a deposit id.",
     {
       depositId: z.string(),
     },
+    READ_TOOL_ANNOTATIONS,
     async ({ depositId }) => {
       try {
         requireAuthForTool();
+        requireReadScope();
         const status = await zyfiApi.getDepositStatus(depositId);
-        return {
-          content: [{ type: "text", text: JSON.stringify(status, null, 2) }],
-        };
+        return toolJsonContent(status, "Deposit lifecycle status");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
