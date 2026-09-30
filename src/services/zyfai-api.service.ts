@@ -1,68 +1,121 @@
 /**
  * Zyfai SDK Service
- * Wrapper service for Zyfai SDK
+ * Per-request SDK instances for authenticated MCP tool calls.
  */
 
-import { ZyfaiSDK, SupportedChainId } from "@zyfai/sdk";
+import {
+  ZyfaiSDK,
+  getDataApiBaseUrl,
+  getExecutionApiBaseUrl,
+  type SDKConfig,
+  type SupportedChainId,
+} from "@zyfai/sdk";
+import type {
+  CustomizationConfig,
+  SimulateBestPositionsParams,
+  Strategy,
+  SupportedAsset,
+  UpdateUserProfileRequest,
+} from "@zyfai/sdk";
 import { config } from "../config/env.js";
+import { getMcpAuth, requireMcpAuth } from "../auth/request-context.js";
 
 export class ZyfaiApiService {
-  private sdk: ZyfaiSDK;
+  private readonly baseConfig: SDKConfig;
 
   constructor() {
+    const apiKey = config.zyfiApiKey || "placeholder-key-for-testing";
     if (!config.zyfiApiKey) {
       console.warn("\n WARNING: ZYFAI_API_KEY not set. API calls will fail.");
-      console.warn("   Please set ZYFAI_API_KEY in your .env file\n");
-      // Use a placeholder to allow server to start for testing
-      this.sdk = new ZyfaiSDK({
-        apiKey: "placeholder-key-for-testing",
-      });
-      return;
     }
+    this.baseConfig = buildSdkConfig(apiKey);
+  }
 
-    this.sdk = new ZyfaiSDK({
-      apiKey: config.zyfiApiKey,
+  /** Anonymous SDK (public/partner-key reads only). */
+  getPublicSDK(): ZyfaiSDK {
+    return new ZyfaiSDK(this.baseConfig);
+  }
+
+  /** SDK bound to the current MCP user's Zyfai JWT. */
+  getAuthenticatedSDK(): ZyfaiSDK {
+    const auth = requireMcpAuth();
+    return ZyfaiSDK.forUser(this.baseConfig, {
+      accessToken: auth.zyfaiAccessToken,
+      userId: auth.userId,
+      eoa: auth.eoa as `0x${string}`,
     });
   }
 
-  /**
-   * Get SDK instance
-   */
-  getSDK(): ZyfaiSDK {
-    return this.sdk;
+  private sdkForUserScoped(): ZyfaiSDK {
+    return this.getAuthenticatedSDK();
   }
 
-  // All methods delegate to SDK
+  // --- Public reads (partner key) ---
+
   async getAvailableProtocols(chainId: SupportedChainId) {
-    return await this.sdk.getAvailableProtocols(chainId);
+    return this.getPublicSDK().getAvailableProtocols(chainId);
   }
 
-  async getPositions(userAddress: string, chainId?: SupportedChainId) {
-    return await this.sdk.getPositions(userAddress, chainId);
+  async getConservativeOpportunities(chainId?: SupportedChainId) {
+    return this.getPublicSDK().getConservativeOpportunities(chainId);
   }
 
-  async getUserDetails() {
-    return await this.sdk.getUserDetails();
+  async getAggressiveOpportunities(chainId?: SupportedChainId) {
+    return this.getPublicSDK().getAggressiveOpportunities(chainId);
   }
 
   async getTVL() {
-    return await this.sdk.getTVL();
+    return this.getPublicSDK().getTVL();
   }
 
   async getVolume() {
-    return await this.sdk.getVolume();
+    return this.getPublicSDK().getVolume();
   }
 
   async getActiveWallets(chainId: SupportedChainId) {
-    return await this.sdk.getActiveWallets(chainId);
+    return this.getPublicSDK().getActiveWallets(chainId);
   }
 
   async getSmartWalletByEOA(eoaAddress: string) {
-    return await this.sdk.getSmartWalletByEOA(eoaAddress);
+    return this.getPublicSDK().getSmartWalletByEOA(eoaAddress);
   }
 
-  async getFirstTopup(walletAddress: string, chainId: SupportedChainId) {
-    return await this.sdk.getFirstTopup(walletAddress, chainId);
+  async getRebalanceFrequency(walletAddress: string) {
+    return this.getPublicSDK().getRebalanceFrequency(walletAddress);
+  }
+
+  async getAPYPerStrategy(
+    crossChain: boolean = false,
+    days: number = 7,
+    strategy: string = "conservative",
+  ) {
+    return this.getPublicSDK().getAPYPerStrategy(
+      crossChain,
+      days,
+      strategy as "conservative" | "aggressive",
+    );
+  }
+
+  // --- Authenticated reads ---
+
+  async getPortfolio(userAddress: string) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.getPortfolio(userAddress);
+  }
+
+  async getPositions(userAddress: string, chainId?: SupportedChainId) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.getPositions(userAddress, chainId);
+  }
+
+  async getUserDetails(asset?: SupportedAsset) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.getUserDetails(asset);
+  }
+
+  async simulateBestPositions(params: SimulateBestPositionsParams) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.simulateBestPositions(params);
   }
 
   async getHistory(
@@ -73,47 +126,115 @@ export class ZyfaiApiService {
       offset?: number;
       fromDate?: string;
       toDate?: string;
-    }
+    },
   ) {
-    return await this.sdk.getHistory(walletAddress, chainId, options);
+    const auth = getMcpAuth();
+    const sdk = auth ? this.sdkForUserScoped() : this.getPublicSDK();
+    return sdk.getHistory(walletAddress, chainId, options);
+  }
+
+  async getFirstTopup(walletAddress: string, chainId: SupportedChainId) {
+    const sdk = this.getPublicSDK();
+    return sdk.getFirstTopup(walletAddress, chainId);
   }
 
   async getOnchainEarnings(walletAddress: string) {
-    return await this.sdk.getOnchainEarnings(walletAddress);
+    const sdk = this.getPublicSDK();
+    return sdk.getOnchainEarnings(walletAddress);
   }
 
   async getDailyEarnings(
     walletAddress: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ) {
-    return await this.sdk.getDailyEarnings(walletAddress, startDate, endDate);
-  }
-
-  async getConservativeOpportunities(chainId?: SupportedChainId) {
-    return await this.sdk.getConservativeOpportunities(chainId);
-  }
-
-  async getAggressiveOpportunities(chainId?: SupportedChainId) {
-    return await this.sdk.getAggressiveOpportunities(chainId);
+    const sdk = this.getPublicSDK();
+    return sdk.getDailyEarnings(walletAddress, startDate, endDate);
   }
 
   async getDailyApyHistory(
     walletAddress: string,
-    days: "7D" | "14D" | "30D" = "7D"
+    days: "7D" | "14D" | "30D" = "7D",
   ) {
-    return await this.sdk.getDailyApyHistory(walletAddress, days);
+    const sdk = this.getPublicSDK();
+    return sdk.getDailyApyHistory(walletAddress, days);
   }
 
-  async getRebalanceFrequency(walletAddress: string) {
-    return await this.sdk.getRebalanceFrequency(walletAddress);
+  // --- Writes ---
+
+  async updateUserProfile(request: UpdateUserProfileRequest) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.updateUserProfile(request);
   }
 
-  async getAPYPerStrategy(
-    crossChain: boolean = false,
-    days: number = 7,
-    strategy: string = "conservative"
-  ) {
-    return await this.sdk.getAPYPerStrategy(crossChain, days, strategy as "conservative" | "aggressive");
+  async customizeBatch(customizations: CustomizationConfig[]) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.customizeBatch(customizations);
   }
+
+  async prepareEnterPosition(params: {
+    userAddress: string;
+    chainId: SupportedChainId;
+    amount: string;
+    asset: SupportedAsset;
+    strategy?: Strategy;
+  }) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.prepareEnterPosition(params);
+  }
+
+  async logDeposit(
+    chainId: SupportedChainId,
+    txHash: string,
+    amount: string,
+    tokenAddress?: string,
+  ) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.logDeposit(chainId, txHash, amount, tokenAddress);
+  }
+
+  async getDepositStatus(depositId: string) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.getDepositStatus(depositId);
+  }
+
+  async waitForDepositCredit(
+    depositId: string,
+    chainId: SupportedChainId,
+  ) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.waitForDepositCredit(depositId, chainId);
+  }
+
+  async getAgentMandate() {
+    const sdk = this.sdkForUserScoped();
+    return sdk.getAgentMandate();
+  }
+
+  async setAgentMandate(
+    request: import("@zyfai/sdk").UpsertAgentMandateRequest,
+  ) {
+    const sdk = this.sdkForUserScoped();
+    return sdk.setAgentMandate(request);
+  }
+
+  async revokeAgentMandate() {
+    const sdk = this.sdkForUserScoped();
+    return sdk.revokeAgentMandate();
+  }
+}
+
+function buildSdkConfig(apiKey: string): SDKConfig {
+  const env = config.backendEnvironment;
+  const executionApiUrl =
+    config.executionApiUrl ??
+    (env ? getExecutionApiBaseUrl(env) : undefined);
+  const dataApiUrl =
+    config.dataApiUrl ?? (env ? getDataApiBaseUrl(env) : undefined);
+
+  return {
+    apiKey,
+    ...(executionApiUrl ? { executionApiUrl } : {}),
+    ...(dataApiUrl ? { dataApiUrl } : {}),
+  };
 }

@@ -18,6 +18,7 @@ import { registerAllTools } from "./src/tools/index.js";
 
 // Routes
 import { setupRoutes } from "./src/routes/http.routes.js";
+import { createOAuthRoutes } from "./src/routes/oauth.routes.js";
 
 // Middleware
 import {
@@ -51,6 +52,7 @@ app.use(
 );
 
 app.use(requestLogger);
+app.use(createOAuthRoutes());
 
 // ============================================================================
 // Create MCP Server & Register Tools
@@ -99,12 +101,10 @@ async function main() {
       console.log(`   - Unified /mcp endpoint for all operations`);
       console.log(`   - Session-based with Mcp-Session-Id header`);
       console.log(`   - Supports streaming responses`);
-      console.log(`\n🔧 Available MCP Tools: 15`);
-      console.log(`   - Protocol: 1 tool`);
-      console.log(`   - Opportunities: 2 tools`);
-      console.log(`   - Analytics: 6 tools`);
-      console.log(`   - User Data: 3 tools`);
-      console.log(`   - Earnings: 3 tools`);
+      console.log(`\n🔧 MCP auth required: ${config.mcpAuthRequired}`);
+      console.log(`   Agent tools: get_account, get_portfolio, find_opportunities,`);
+      console.log(`   simulate_action, configure_position, prepare_deposit,`);
+      console.log(`   submit_deposit, get_deposit_status (+ legacy read tools)`);
       console.log(`\n📚 Zyfai SDK: @zyfai/sdk`);
       console.log(`${"=".repeat(60)}\n`);
     });

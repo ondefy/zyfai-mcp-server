@@ -21,3 +21,6 @@ export const chainIdSchema = z.union(literals);
 
 /** Optional chainId filter on tools that support all chains. */
 export const optionalChainIdSchema = chainIdSchema.optional();
+
+/** Alias used by agent intent tools. */
+export const executionChainIdSchema = chainIdSchema;

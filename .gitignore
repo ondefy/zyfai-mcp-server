@@ -8,6 +8,9 @@ yarn.lock
 build/
 dist/
 
+# Local workspace SDK override (see pnpm-workspace.example.yaml)
+pnpm-workspace.yaml
+
 # Environment variables
 .env
 .env.local

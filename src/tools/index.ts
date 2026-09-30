@@ -10,11 +10,13 @@ import { registerOpportunitiesTools } from "./opportunities.tools.js";
 import { registerAnalyticsTools } from "./analytics.tools.js";
 import { registerUserDataTools } from "./user-data.tools.js";
 import { registerEarningsTools } from "./earnings.tools.js";
+import { registerAgentTools } from "./agent.tools.js";
 
 /**
  * Register all MCP tools with the server
  */
 export function registerAllTools(server: McpServer, zyfiApi: ZyfaiApiService) {
+  registerAgentTools(server, zyfiApi);
   registerProtocolTools(server, zyfiApi);
   registerOpportunitiesTools(server, zyfiApi);
   registerAnalyticsTools(server, zyfiApi);

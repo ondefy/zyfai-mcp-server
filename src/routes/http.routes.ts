@@ -8,6 +8,27 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "crypto";
+import { runWithMcpAuth } from "../auth/request-context.js";
+import {
+  mcpAuthMiddleware,
+  type RequestWithMcpAuth,
+} from "../middleware/mcp-auth.middleware.js";
+
+async function handleMcpRequest(
+  req: Request,
+  res: Response,
+  transport: StreamableHTTPServerTransport,
+  body?: unknown,
+) {
+  const mcpAuth = (req as RequestWithMcpAuth).mcpAuth;
+  if (mcpAuth) {
+    await runWithMcpAuth(mcpAuth, async () => {
+      await transport.handleRequest(req, res, body);
+    });
+    return;
+  }
+  await transport.handleRequest(req, res, body);
+}
 
 const router = Router();
 
@@ -72,7 +93,7 @@ export function setupRoutes(server: McpServer) {
    * Handles both initialization and regular tool calls
    * Supports streaming responses for long-running operations
    */
-  router.post("/mcp", async (req: Request, res: Response) => {
+  router.post("/mcp", mcpAuthMiddleware, async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     let transport: StreamableHTTPServerTransport;
 
@@ -131,7 +152,7 @@ export function setupRoutes(server: McpServer) {
       }
 
       // Handle the request through the transport
-      await transport.handleRequest(req, res, req.body);
+      await handleMcpRequest(req, res, transport, req.body);
     } catch (error) {
       console.error("[MCP] Error handling request:", error);
 
@@ -153,7 +174,7 @@ export function setupRoutes(server: McpServer) {
    * GET /mcp - Server-to-client streaming endpoint
    * Used for server-initiated notifications and streaming responses
    */
-  router.get("/mcp", async (req: Request, res: Response) => {
+  router.get("/mcp", mcpAuthMiddleware, async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
     if (!sessionId) {
@@ -184,14 +205,14 @@ export function setupRoutes(server: McpServer) {
     console.log(`[MCP] GET stream opened for session: ${sessionId}`);
 
     // Handle SSE streaming for server notifications
-    await transport.handleRequest(req, res);
+    await handleMcpRequest(req, res, transport);
   });
 
   /**
    * DELETE /mcp - Cleanup session
    * Allows clients to explicitly terminate their session
    */
-  router.delete("/mcp", async (req: Request, res: Response) => {
+  router.delete("/mcp", mcpAuthMiddleware, async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
     if (!sessionId) {
