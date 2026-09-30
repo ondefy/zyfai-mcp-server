@@ -16,7 +16,10 @@ export default defineConfig({
   test: {
     env: mergeIntegrationEnv(),
     setupFiles: ["src/integration/setup.ts"],
-    include: ["src/integration/**/*.integration.test.ts"],
+    include: [
+      "src/integration/**/*.integration.test.ts",
+      "src/**/*.test.ts",
+    ],
     fileParallelism: false,
   },
 });

@@ -4,27 +4,18 @@
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { scopeIncludes } from "../auth/request-context.js";
 import {
-  assertEoaMatches,
-  requireMcpAuth,
-  scopeIncludes,
-} from "../auth/request-context.js";
-import { executionChainIdSchema } from "../config/chains.js";
-import { config } from "../config/env.js";
+  authenticatedEoa,
+  requireAuthForTool,
+} from "../auth/user-scope.js";
+import {
+  executionChainIdSchema,
+  optionalChainIdSchema,
+  CHAIN_ID_DESCRIPTION,
+} from "../config/chains.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
-
-function toolError(message: string) {
-  return {
-    content: [{ type: "text" as const, text: message }],
-    isError: true,
-  };
-}
-
-function requireAuthForTool(): void {
-  if (config.mcpAuthRequired) {
-    requireMcpAuth();
-  }
-}
+import { toolError, toolJsonContent } from "./tool-response.js";
 
 export function registerAgentTools(
   server: McpServer,
@@ -38,9 +29,7 @@ export function registerAgentTools(
       try {
         requireAuthForTool();
         const response = await zyfiApi.getUserDetails("USDC");
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
+        return toolJsonContent(response);
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -52,22 +41,35 @@ export function registerAgentTools(
   server.tool(
     "get_portfolio",
     "Portfolio for the authenticated user (positions, idle balances, async redemptions).",
-    {
-      userAddress: z
-        .string()
-        .optional()
-        .describe("EOA; must match OAuth wallet when provided"),
-    },
-    async ({ userAddress }) => {
+    {},
+    async () => {
       try {
         requireAuthForTool();
-        const auth = requireMcpAuth();
-        const eoa = userAddress || auth.eoa;
-        assertEoaMatches(eoa);
+        const eoa = authenticatedEoa();
         const response = await zyfiApi.getPortfolio(eoa);
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
+        return toolJsonContent(response);
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "get_positions",
+    "Active DeFi positions for the authenticated user. Optional chain filter.",
+    {
+      chainId: optionalChainIdSchema.describe(
+        `Optional chain ID. ${CHAIN_ID_DESCRIPTION}`,
+      ),
+    },
+    async ({ chainId }) => {
+      try {
+        requireAuthForTool();
+        const eoa = authenticatedEoa();
+        const response = await zyfiApi.getPositions(eoa, chainId);
+        return toolJsonContent(response);
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -91,9 +93,7 @@ export function registerAgentTools(
           strategy === "conservative"
             ? await zyfiApi.getConservativeOpportunities(chainId)
             : await zyfiApi.getAggressiveOpportunities(chainId);
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
+        return toolJsonContent(response);
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -174,7 +174,6 @@ export function registerAgentTools(
     "prepare_deposit",
     "Build ERC-20 transfer calldata to fund the Safe; user must sign on-chain.",
     {
-      userAddress: z.string().optional(),
       chainId: executionChainIdSchema,
       amount: z.string().describe("Amount in least units (string integer)"),
       asset: z.enum(["USDC", "WETH", "EURC", "NVDAc"]),
@@ -182,15 +181,13 @@ export function registerAgentTools(
         .enum(["conservative", "aggressive", "yieldmaxxing"])
         .optional(),
     },
-    async ({ userAddress, chainId, amount, asset, strategy }) => {
+    async ({ chainId, amount, asset, strategy }) => {
       try {
         requireAuthForTool();
         if (!scopeIncludes("mcp:tools:write:deposit")) {
           return toolError("Missing scope mcp:tools:write:deposit");
         }
-        const auth = requireMcpAuth();
-        const eoa = userAddress || auth.eoa;
-        assertEoaMatches(eoa);
+        const eoa = authenticatedEoa();
         const response = await zyfiApi.prepareEnterPosition({
           userAddress: eoa,
           chainId,
@@ -198,9 +195,7 @@ export function registerAgentTools(
           asset,
           strategy,
         });
-        return {
-          content: [{ type: "text", text: JSON.stringify(response, null, 2) }],
-        };
+        return toolJsonContent(response);
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

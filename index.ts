@@ -3,8 +3,10 @@
  * Main entry point - Modular architecture
  */
 
-import { config } from "./src/config/env.js";
+import { assertProductionMcpConfig, config } from "./src/config/env.js";
 import { createApp } from "./src/create-app.js";
+
+assertProductionMcpConfig();
 
 const { app } = createApp();
 
@@ -27,10 +29,12 @@ async function main() {
       console.log(`   - Supports streaming responses`);
       console.log(`\n🔧 MCP auth required: ${config.mcpAuthRequired}`);
       console.log(
-        `   Agent tools: get_account, get_portfolio, find_opportunities,`,
+        `   Tools: agent (account, portfolio, deposits, mandate),`,
       );
-      console.log(`   simulate_action, configure_position, prepare_deposit,`);
-      console.log(`   submit_deposit, get_deposit_status (+ legacy read tools)`);
+      console.log(
+        `   session reads (history, earnings, rebalance tier),`,
+      );
+      console.log(`   discovery (find_opportunities, get-available-protocols)`);
       console.log(`\n📚 Zyfai SDK: @zyfai/sdk`);
       console.log(`${"=".repeat(60)}\n`);
     });

@@ -45,8 +45,31 @@ export const config = {
   mcpOAuthJwtSecret:
     process.env.MCP_OAUTH_JWT_SECRET || process.env.AUTH_JWT_SECRET,
 
+  mcpServerExchangeSecret: process.env.MCP_SERVER_EXCHANGE_SECRET,
+
   mcpAuthorizationServer:
     process.env.MCP_OAUTH_ISSUER?.replace(/\/$/, "") ||
     process.env.API_PUBLIC_URL?.replace(/\/$/, "") ||
     "https://api.zyf.ai",
 } as const;
+
+function isProductionNodeEnv(): boolean {
+  const env = process.env.NODE_ENV?.toLowerCase();
+  return env === "production" || env === "prod";
+}
+
+/** Fail fast when production MCP auth is misconfigured. */
+export function assertProductionMcpConfig(): void {
+  if (!isProductionNodeEnv()) {
+    return;
+  }
+  if (!config.mcpAuthRequired) {
+    throw new Error("MCP_AUTH_REQUIRED must be true in production");
+  }
+  if (!config.mcpOAuthJwtSecret) {
+    throw new Error("MCP_OAUTH_JWT_SECRET is required in production");
+  }
+  if (!config.mcpServerExchangeSecret) {
+    throw new Error("MCP_SERVER_EXCHANGE_SECRET is required in production");
+  }
+}

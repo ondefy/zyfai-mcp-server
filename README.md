@@ -1,6 +1,6 @@
 # Zyfai DeFi MCP Server
 
-Streamable HTTP [MCP](https://modelcontextprotocol.io) server over [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk). Exposes Zyfai portfolio, opportunity, analytics, and earnings reads (plus agent-oriented tools when OAuth is enabled).
+Streamable HTTP [MCP](https://modelcontextprotocol.io) server over [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk). OAuth-scoped portfolio, earnings, and agent tools, plus protocol/opportunity discovery.
 
 **Production:** [https://mcp.zyf.ai/mcp](https://mcp.zyf.ai/mcp) · **Health:** `/health`
 
@@ -56,7 +56,7 @@ Copy [`.env.example`](.env.example). Common variables:
 | Variable | Purpose |
 | --- | --- |
 | `ZYFAI_API_KEY` | Partner SDK key (required for live API calls) |
-| `MCP_AUTH_REQUIRED` | `true` in production and for local OAuth/user-tool tests; `false` allows unauthenticated HTTP for public read tools only |
+| `MCP_AUTH_REQUIRED` | `true` in production; personal tools need OAuth. `false` allows unauthenticated HTTP only for `get-available-protocols` and `find_opportunities` |
 | `PORT` / `HOST` / `ALLOWED_ORIGINS` | HTTP server |
 
 Full list and backend URL overrides: `.env.example` and [`AGENTS.md`](AGENTS.md#environment).

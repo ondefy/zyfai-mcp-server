@@ -38,7 +38,8 @@ export function mcpAuthMiddleware(
       userId: payload.sub,
       eoa: payload.eoa,
       scope: payload.scope || "mcp:tools:read",
-      zyfaiAccessToken: payload.zyfai_access_token,
+      sessionId: payload.sid,
+      mcpAccessToken: token,
     };
     return next();
   } catch (error) {

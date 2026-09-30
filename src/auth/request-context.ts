@@ -4,7 +4,8 @@ export type McpRequestAuth = {
   userId: string;
   eoa: string;
   scope: string;
-  zyfaiAccessToken: string;
+  sessionId: string;
+  mcpAccessToken: string;
 };
 
 const storage = new AsyncLocalStorage<McpRequestAuth>();

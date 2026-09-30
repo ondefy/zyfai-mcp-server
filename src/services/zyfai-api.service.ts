@@ -18,7 +18,10 @@ import type {
   UpdateUserProfileRequest,
 } from "@zyfai/sdk";
 import { config } from "../config/env.js";
-import { getMcpAuth, requireMcpAuth } from "../auth/request-context.js";
+import { exchangeMcpSessionCredential } from "../auth/session-credential.js";
+import { requireMcpAuth } from "../auth/request-context.js";
+
+const MCP_SERVER_KEY_HEADER = "x-mcp-server-key";
 
 export class ZyfaiApiService {
   private readonly baseConfig: SDKConfig;
@@ -36,17 +39,30 @@ export class ZyfaiApiService {
     return new ZyfaiSDK(this.baseConfig);
   }
 
-  /** SDK bound to the current MCP user's Zyfai JWT. */
-  getAuthenticatedSDK(): ZyfaiSDK {
+  /** SDK bound to the current MCP user's Zyfai JWT (via server-side session exchange). */
+  async getAuthenticatedSDK(): Promise<ZyfaiSDK> {
     const auth = requireMcpAuth();
-    return ZyfaiSDK.forUser(this.baseConfig, {
-      accessToken: auth.zyfaiAccessToken,
+    const accessToken = await exchangeMcpSessionCredential(auth.mcpAccessToken);
+    const sdk = ZyfaiSDK.forUser(this.baseConfig, {
+      accessToken,
       userId: auth.userId,
       eoa: auth.eoa as `0x${string}`,
     });
+    const serverKey = config.mcpServerExchangeSecret;
+    if (serverKey) {
+      const sdkWithHeaders = sdk as ZyfaiSDK & {
+        setExecutionRequestHeaders?: (
+          headers: Record<string, string>,
+        ) => void;
+      };
+      sdkWithHeaders.setExecutionRequestHeaders?.({
+        [MCP_SERVER_KEY_HEADER]: serverKey,
+      });
+    }
+    return sdk;
   }
 
-  private sdkForUserScoped(): ZyfaiSDK {
+  private async sdkForUserScoped(): Promise<ZyfaiSDK> {
     return this.getAuthenticatedSDK();
   }
 
@@ -64,57 +80,25 @@ export class ZyfaiApiService {
     return this.getPublicSDK().getAggressiveOpportunities(chainId);
   }
 
-  async getTVL() {
-    return this.getPublicSDK().getTVL();
-  }
-
-  async getVolume() {
-    return this.getPublicSDK().getVolume();
-  }
-
-  async getActiveWallets(chainId: SupportedChainId) {
-    return this.getPublicSDK().getActiveWallets(chainId);
-  }
-
-  async getSmartWalletByEOA(eoaAddress: string) {
-    return this.getPublicSDK().getSmartWalletByEOA(eoaAddress);
-  }
-
-  async getRebalanceFrequency(walletAddress: string) {
-    return this.getPublicSDK().getRebalanceFrequency(walletAddress);
-  }
-
-  async getAPYPerStrategy(
-    crossChain: boolean = false,
-    days: number = 7,
-    strategy: string = "conservative",
-  ) {
-    return this.getPublicSDK().getAPYPerStrategy(
-      crossChain,
-      days,
-      strategy as "conservative" | "aggressive",
-    );
-  }
-
   // --- Authenticated reads ---
 
   async getPortfolio(userAddress: string) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getPortfolio(userAddress);
   }
 
   async getPositions(userAddress: string, chainId?: SupportedChainId) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getPositions(userAddress, chainId);
   }
 
   async getUserDetails(asset?: SupportedAsset) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getUserDetails(asset);
   }
 
   async simulateBestPositions(params: SimulateBestPositionsParams) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.simulateBestPositions(params);
   }
 
@@ -128,18 +112,17 @@ export class ZyfaiApiService {
       toDate?: string;
     },
   ) {
-    const auth = getMcpAuth();
-    const sdk = auth ? this.sdkForUserScoped() : this.getPublicSDK();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getHistory(walletAddress, chainId, options);
   }
 
   async getFirstTopup(walletAddress: string, chainId: SupportedChainId) {
-    const sdk = this.getPublicSDK();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getFirstTopup(walletAddress, chainId);
   }
 
   async getOnchainEarnings(walletAddress: string) {
-    const sdk = this.getPublicSDK();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getOnchainEarnings(walletAddress);
   }
 
@@ -148,7 +131,7 @@ export class ZyfaiApiService {
     startDate?: string,
     endDate?: string,
   ) {
-    const sdk = this.getPublicSDK();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getDailyEarnings(walletAddress, startDate, endDate);
   }
 
@@ -156,19 +139,24 @@ export class ZyfaiApiService {
     walletAddress: string,
     days: "7D" | "14D" | "30D" = "7D",
   ) {
-    const sdk = this.getPublicSDK();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getDailyApyHistory(walletAddress, days);
+  }
+
+  async getRebalanceFrequency(walletAddress: string) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.getRebalanceFrequency(walletAddress);
   }
 
   // --- Writes ---
 
   async updateUserProfile(request: UpdateUserProfileRequest) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.updateUserProfile(request);
   }
 
   async customizeBatch(customizations: CustomizationConfig[]) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.customizeBatch(customizations);
   }
 
@@ -179,7 +167,7 @@ export class ZyfaiApiService {
     asset: SupportedAsset;
     strategy?: Strategy;
   }) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.prepareEnterPosition(params);
   }
 
@@ -189,12 +177,12 @@ export class ZyfaiApiService {
     amount: string,
     tokenAddress?: string,
   ) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.logDeposit(chainId, txHash, amount, tokenAddress);
   }
 
   async getDepositStatus(depositId: string) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getDepositStatus(depositId);
   }
 
@@ -202,24 +190,24 @@ export class ZyfaiApiService {
     depositId: string,
     chainId: SupportedChainId,
   ) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.waitForDepositCredit(depositId, chainId);
   }
 
   async getAgentMandate() {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.getAgentMandate();
   }
 
   async setAgentMandate(
     request: import("@zyfai/sdk").UpsertAgentMandateRequest,
   ) {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.setAgentMandate(request);
   }
 
   async revokeAgentMandate() {
-    const sdk = this.sdkForUserScoped();
+    const sdk = await this.sdkForUserScoped();
     return sdk.revokeAgentMandate();
   }
 }

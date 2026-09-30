@@ -16,7 +16,13 @@ index.ts → src/routes/http.routes.ts → src/tools/* → ZyfaiApiService → Z
 - **STDIO:** `index-stdio.ts` for local Claude Desktop-style hosts.
 - **Proxy:** `proxy-server.ts` bridges stdio to a remote `/mcp` URL.
 
-Today the server uses a single partner `ZYFAI_API_KEY` on a singleton SDK instance. No per-user OAuth or write tools yet.
+Partner `ZYFAI_API_KEY` backs **`get-available-protocols`** and **`find_opportunities`**. All other reads and writes use per-request OAuth: MCP bearer → Zyfai user JWT via [`src/auth/session-credential.ts`](src/auth/session-credential.ts) and [`ZyfaiApiService.getAuthenticatedSDK`](src/services/zyfai-api.service.ts).
+
+## Authentication and tenancy
+
+- HTTP OAuth: [`src/middleware/mcp-auth.middleware.ts`](src/middleware/mcp-auth.middleware.ts) + [`src/auth/request-context.ts`](src/auth/request-context.ts).
+- Personal tools resolve wallets from the session only ([`src/auth/user-scope.ts`](src/auth/user-scope.ts)): EOA from the token for portfolio/positions; smart wallet from `getUserDetails()` for history, earnings, and rebalance tier. **Never** accept a foreign `userAddress` / `walletAddress` on MCP tools.
+- When `MCP_AUTH_REQUIRED=true`, every `/mcp` request needs a bearer. When `false`, only the two partner-key discovery tools work without a user session.
 
 ## Environment
 
@@ -65,7 +71,7 @@ MCP endpoint: `http://localhost:3005/mcp` (health: `/health`). Point Cursor at t
 
 With `MCP_AUTH_REQUIRED=true`, `zyfai-api` must be up for OAuth (`MCP_OAUTH_JWT_SECRET` / `MCP_RESOURCE_URL` aligned in both `.env` files). `dev:zyfai-mcp` starts the API; wait for `:3000` before expecting Cursor OAuth to succeed.
 
-From workspace root, full stack with MCP: `pnpm dev -- --mcp` (or `pnpm dev:mcp`) adds pool + frontend. Sets `ZYFAI_BACKEND_ENV=local` on the MCP process (execution → `http://localhost:3000`). For opportunity/TVL-style reads, set `ZYFAI_DATA_API_URL` in `.env` to staging defi-api unless you run `zyfai-defi-api` locally on `:3000`.
+From workspace root, full stack with MCP: `pnpm dev -- --mcp` (or `pnpm dev:mcp`) adds pool + frontend. Sets `ZYFAI_BACKEND_ENV=local` on the MCP process (execution → `http://localhost:3000`). For opportunity reads, set `ZYFAI_DATA_API_URL` in `.env` to staging defi-api unless you run `zyfai-defi-api` locally on `:3000`.
 
 Restore npm `@zyfai/sdk`: `rm zyfai-mcp-server/pnpm-workspace.yaml && cd zyfai-mcp-server && pnpm install`.
 
@@ -100,7 +106,7 @@ Docker: `pnpm-lock.yaml` + `Dockerfile` (default `PORT=3005`). PM2: `ecosystem.c
 
 | Path | Role |
 | --- | --- |
-| `src/tools/` | MCP tool registration (15 read tools) |
+| `src/tools/` | MCP tool registration (agent, protocol, user session, earnings) |
 | `src/services/zyfai-api.service.ts` | Thin SDK wrapper |
 | `src/config/env.ts` | Environment |
 | `src/config/chains.ts` | Shared chain Zod schemas |
@@ -123,7 +129,3 @@ Repo overview: [`README.md`](README.md). Public tool list, auth, and client setu
 | `release` | Release | [`.agents/review/release.md`](.agents/review/release.md) |
 
 These `.agents/review/` policies are for automated CI and its JSON result only. For interactive reviews, follow the parent workspace `review-change` → `functional-reviewer` route.
-
-## Forward work
-
-OAuth, per-user JWT, scoped reads, and deposit write paths are designed in the workspace plan `mcp_agent_interface` (parent `.cursor/plans/`). Extend this `AGENTS.md` auth section when that lands; do not replace harness sections.

@@ -1,128 +1,87 @@
 /**
- * Analytics & Metrics Tools
+ * Session-scoped earnings and APY history.
  */
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  requireAuthForTool,
+  resolveSessionSmartWallet,
+} from "../auth/user-scope.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { toolError, toolJsonContent } from "./tool-response.js";
 
 export function registerEarningsTools(
   server: McpServer,
-  zyfiApi: ZyfaiApiService
+  zyfiApi: ZyfaiApiService,
 ) {
-    server.tool(
-        "get-daily-apy-history",
-        "Get daily APY history for a wallet including total, current, and lifetime earnings",
-        {
-          walletAddress: z.string().describe("The smart wallet address"),
-          days: z.enum(["7D", "14D", "30D"]).optional().default("7D").describe("Period: '7D', '14D', or '30D' (default: '7D')"),
-        },
-        async ({ walletAddress, days }) => {
-          try {
-            const response = await zyfiApi.getDailyApyHistory(walletAddress, days || "7D");
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: JSON.stringify(response, null, 2),
-                },
-              ],
-            };
-          } catch (error) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Error fetching daily APY history: ${
-                    error instanceof Error ? error.message : "Unknown error"
-                  }`,
-                },
-              ],
-              isError: true,
-            };
-          }
-        }
-      );
-
-
   server.tool(
-    "get-onchain-earnings",
-    "Get onchain earnings for a wallet including total, current, and lifetime earnings",
-    {
-      walletAddress: z
-        .string()
-        .describe("The smart wallet address to get earnings for"),
-    },
-    async ({ walletAddress }) => {
+    "get_earnings",
+    "On-chain earnings totals for the authenticated user's smart wallet.",
+    {},
+    async () => {
       try {
-        const response = await zyfiApi.getOnchainEarnings(walletAddress);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        requireAuthForTool();
+        const smartWallet = await resolveSessionSmartWallet(zyfiApi);
+        const response = await zyfiApi.getOnchainEarnings(smartWallet);
+        return toolJsonContent(response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching onchain earnings: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
       }
-    }
+    },
   );
 
   server.tool(
-    "get-daily-earnings",
-    "Get daily earnings for a wallet within a date range",
+    "get_daily_earnings",
+    "Daily earnings breakdown for the authenticated user over a date range.",
     {
-      walletAddress: z
-        .string()
-        .describe("The smart wallet address to get daily earnings for"),
       startDate: z
         .string()
         .optional()
-        .describe("Start date in YYYY-MM-DD format"),
-      endDate: z.string().optional().describe("End date in YYYY-MM-DD format"),
+        .describe("Start date (YYYY-MM-DD)"),
+      endDate: z.string().optional().describe("End date (YYYY-MM-DD)"),
     },
-    async ({ walletAddress, startDate, endDate }) => {
+    async ({ startDate, endDate }) => {
       try {
+        requireAuthForTool();
+        const smartWallet = await resolveSessionSmartWallet(zyfiApi);
         const response = await zyfiApi.getDailyEarnings(
-          walletAddress,
+          smartWallet,
           startDate,
-          endDate
+          endDate,
         );
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return toolJsonContent(response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching daily earnings: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
       }
-    }
+    },
   );
 
-  
+  server.tool(
+    "get_apy_history",
+    "Daily weighted APY history for the authenticated user's smart wallet.",
+    {
+      days: z
+        .enum(["7D", "14D", "30D"])
+        .optional()
+        .default("7D")
+        .describe("Lookback period"),
+    },
+    async ({ days }) => {
+      try {
+        requireAuthForTool();
+        const smartWallet = await resolveSessionSmartWallet(zyfiApi);
+        const response = await zyfiApi.getDailyApyHistory(smartWallet, days);
+        return toolJsonContent(response);
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
 }

@@ -55,12 +55,11 @@ export function setupRoutes(zyfaiApi: ZyfaiApiService) {
       timestamp: new Date().toISOString(),
       protocol: "Streamable HTTP",
       tools: {
+        agent: 11,
         protocol: 1,
-        opportunities: 2,
-        analytics: 6,
-        userData: 3,
+        userSession: 3,
         earnings: 3,
-        total: 15,
+        total: 18,
       },
     });
   });
@@ -71,7 +70,7 @@ export function setupRoutes(zyfaiApi: ZyfaiApiService) {
       message: "Zyfai DeFi MCP Server",
       version: "1.0.0",
       description:
-        "MCP server providing access to Zyfai DeFi APIs for portfolio management, yield opportunities, and earnings analytics",
+        "MCP server for authenticated Zyfai users: portfolio, earnings, opportunities, and agent actions",
       transport: "Streamable HTTP",
       endpoints: {
         health: "/health",
@@ -79,14 +78,8 @@ export function setupRoutes(zyfaiApi: ZyfaiApiService) {
       },
       protocol: "Streamable HTTP (MCP 2024-11-05+)",
       tools: {
-        categories: [
-          "Protocol",
-          "Opportunities Discovery",
-          "Analytics & Metrics",
-          "User Data",
-          "Earnings",
-        ],
-        totalTools: 15,
+        categories: ["Agent", "Protocol", "User session", "Earnings"],
+        totalTools: 18,
       },
     });
   });

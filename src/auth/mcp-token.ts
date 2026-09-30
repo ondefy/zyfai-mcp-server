@@ -5,7 +5,7 @@ export type McpAccessTokenPayload = {
   sub: string;
   eoa: string;
   scope: string;
-  zyfai_access_token: string;
+  sid: string;
   aud?: string;
 };
 
@@ -16,8 +16,15 @@ export function verifyMcpAccessToken(
   if (!secret) {
     throw new Error("MCP_OAUTH_JWT_SECRET is not configured");
   }
-  const payload = jwt.verify(token, secret) as McpAccessTokenPayload;
-  if (!payload.sub || !payload.eoa || !payload.zyfai_access_token) {
+  const payload = jwt.verify(token, secret) as McpAccessTokenPayload & {
+    zyfai_access_token?: string;
+  };
+  if (
+    !payload.sub ||
+    !payload.eoa ||
+    !payload.sid ||
+    payload.zyfai_access_token
+  ) {
     throw new Error("Invalid MCP token claims");
   }
   if (
