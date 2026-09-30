@@ -77,14 +77,13 @@ Docker: `pnpm-lock.yaml` + `Dockerfile` (default `PORT=3005`). PM2: `ecosystem.c
 | `src/config/env.ts` | Environment |
 | `src/config/chains.ts` | Shared chain Zod schemas |
 
-Public tool list and client setup: [`README.md`](README.md). Product docs: [docs.zyf.ai MCP guide](https://docs.zyf.ai/docs/sdk/mcp-server).
+Repo overview: [`README.md`](README.md). Public tool list, auth, and client setup: [docs.zyf.ai MCP guide](https://docs.zyf.ai/docs/sdk/mcp-server).
 
 ## Task completion
 
 1. Change tools or SDK calls → run `pnpm run check`.
 2. Bump `@zyfai/sdk` only when intentional; align `src/config/chains.ts` if `SupportedChainId` changes.
-3. Update `README.md` tool catalogue if names or parameters change.
-4. User-facing docs: update `sdk-api-docs` `docs/sdk/mcp-server.md` when the public MCP contract changes.
+3. User-facing contract: update `sdk-api-docs` `docs/sdk/mcp-server.md` when tools, auth, or client setup change; keep `README.md` as a short pointer only.
 
 ## Code review
 
