@@ -39,14 +39,18 @@ export function requiredScopeForTool(toolName: string): string | undefined {
   if (readTools.has(toolName)) {
     return "mcp:tools:read";
   }
-  if (toolName === "register_deposit" || toolName === "prepare_deposit") {
+  if (
+    toolName === "register_deposit" ||
+    toolName === "prepare_deposit" ||
+    toolName === "register_withdraw"
+  ) {
     return "mcp:tools:write:deposit";
   }
   if (toolName === "update_settings") {
     return "mcp:tools:write:configure";
   }
   if (toolName === "withdraw") {
-    return "mcp:tools:write:withdraw";
+    return "mcp:tools:write:deposit";
   }
   return undefined;
 }
@@ -139,6 +143,20 @@ export function authorizeMcpToolCall(
     };
   }
   const scopes = auth.scope.split(/\s+/).filter(Boolean);
+  if (toolName === "withdraw" || toolName === "register_withdraw") {
+    if (
+      scopes.includes("mcp:tools:write:withdraw") ||
+      scopes.includes("mcp:tools:write:deposit")
+    ) {
+      return { ok: true };
+    }
+    return {
+      ok: false,
+      status: 403,
+      error: "insufficient_scope",
+      message: "Missing scope mcp:tools:write:deposit",
+    };
+  }
   if (!scopes.includes(required)) {
     return {
       ok: false,

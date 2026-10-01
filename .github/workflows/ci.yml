@@ -16,12 +16,6 @@ jobs:
         with:
           path: zyfai-mcp-server
 
-      - uses: actions/checkout@v4
-        with:
-          repository: ondefy/zyfai-sdk
-          path: zyfai-sdk
-          ref: ${{ vars.ZYFAI_SDK_CI_REF || 'feat/mcp-agent-interface' }}
-
       - uses: pnpm/action-setup@v4
         with:
           run_install: false
@@ -33,13 +27,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: zyfai-mcp-server/pnpm-lock.yaml
 
-      - name: Build @zyfai/sdk
-        working-directory: zyfai-sdk
-        run: npm ci && npm run build
-
       - name: Install dependencies
-        run: |
-          cp pnpm-workspace.example.yaml pnpm-workspace.yaml
-          pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - run: pnpm run check

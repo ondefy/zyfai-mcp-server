@@ -79,9 +79,22 @@ describe("authorizeMcpRequestBody", () => {
   it("rejects insufficient scope for a protected tool in a batch", () => {
     expect(
       authorizeMcpRequestBody([toolsCall("withdraw")], {
-        scope: "mcp:tools:read mcp:tools:write:deposit",
+        scope: "mcp:tools:read",
       }),
     ).toMatchObject({ ok: false, status: 403 });
+  });
+
+  it("allows withdraw with deposit write scope", () => {
+    expect(
+      authorizeMcpRequestBody([toolsCall("withdraw")], {
+        scope: "mcp:tools:read mcp:tools:write:deposit",
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      authorizeMcpRequestBody([toolsCall("register_withdraw")], {
+        scope: "mcp:tools:read mcp:tools:write:deposit",
+      }),
+    ).toEqual({ ok: true });
   });
 
   it("allows a mixed public and protected batch when scoped", () => {

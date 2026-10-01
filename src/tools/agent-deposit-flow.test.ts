@@ -12,6 +12,11 @@ describe("agent deposit MCP flow (deterministic)", () => {
         scope: "mcp:tools:read mcp:tools:write:withdraw",
       }),
     ).toEqual({ ok: true });
+    expect(
+      authorizeMcpToolCall("withdraw", {
+        scope: "mcp:tools:read mcp:tools:write:deposit",
+      }),
+    ).toEqual({ ok: true });
   });
 
   it("blocks register_deposit when intent fields disagree", () => {

@@ -22,6 +22,36 @@ import { toolError, toolJsonContent } from "./tool-response.js";
 const depositAssetSchema = z.enum(["USDC", "WETH", "EURC", "NVDAc"]);
 const strategySchema = z.enum(["conservative", "aggressive", "yieldmaxxing"]);
 
+const withdrawToolSchema = {
+  chainId: executionChainIdSchema,
+  asset: depositAssetSchema.optional(),
+  amount: z
+    .string()
+    .optional()
+    .describe("Partial withdrawal amount in least units; omit for full"),
+};
+
+const withdrawToolDescription =
+  "Withdraw funds from the user's Zyfai smart wallet to the owner's address using the existing Zyfai withdrawal backend. Omit amount for a full withdrawal on the chain.";
+
+async function runWithdrawTool(
+  zyfiApi: ZyfaiApiService,
+  chainId: z.infer<typeof executionChainIdSchema>,
+  asset?: z.infer<typeof depositAssetSchema>,
+  amount?: string,
+) {
+  requireAuthForTool();
+  if (
+    !scopeIncludes("mcp:tools:write:withdraw") &&
+    !scopeIncludes("mcp:tools:write:deposit")
+  ) {
+    return toolError("Missing scope mcp:tools:write:deposit");
+  }
+  const eoa = authenticatedEoa();
+  const result = await zyfiApi.withdrawFunds(eoa, chainId, amount, asset);
+  return toolJsonContent(result, "Withdrawal requested");
+}
+
 /** Financial write tools (opt-in via MCP_WRITE_TOOLS_ENABLED). */
 export function registerAgentWriteTools(
   server: McpServer,
@@ -152,26 +182,29 @@ export function registerAgentWriteTools(
   );
 
   server.tool(
-    "withdraw",
-    "Withdraw funds from the user's Zyfai smart wallet to the owner's address using the existing Zyfai withdrawal backend. Omit amount for a full withdrawal on the chain.",
-    {
-      chainId: executionChainIdSchema,
-      asset: depositAssetSchema.optional(),
-      amount: z
-        .string()
-        .optional()
-        .describe("Partial withdrawal amount in least units; omit for full"),
+    "register_withdraw",
+    withdrawToolDescription,
+    withdrawToolSchema,
+    WRITE_DEPOSIT_ANNOTATIONS,
+    async ({ chainId, asset, amount }) => {
+      try {
+        return await runWithdrawTool(zyfiApi, chainId, asset, amount);
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
     },
+  );
+
+  server.tool(
+    "withdraw",
+    withdrawToolDescription,
+    withdrawToolSchema,
     WRITE_DESTRUCTIVE_ANNOTATIONS,
     async ({ chainId, asset, amount }) => {
       try {
-        requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write:withdraw")) {
-          return toolError("Missing scope mcp:tools:write:withdraw");
-        }
-        const eoa = authenticatedEoa();
-        const result = await zyfiApi.withdrawFunds(eoa, chainId, amount, asset);
-        return toolJsonContent(result, "Withdrawal requested");
+        return await runWithdrawTool(zyfiApi, chainId, asset, amount);
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
