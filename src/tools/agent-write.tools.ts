@@ -1,12 +1,13 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { scopeIncludes } from "../auth/request-context.js";
+import { requireMcpAuth, scopeIncludes } from "../auth/request-context.js";
 import {
   authenticatedEoa,
   requireAuthForTool,
 } from "../auth/user-scope.js";
 import { executionChainIdSchema } from "../config/chains.js";
 import {
+  chatLabelFromClientId,
   consumeEnterActionIntent,
   createEnterActionIntent,
 } from "../services/enter-action-intent.js";
@@ -52,6 +53,7 @@ export function registerAgentWriteTools(
           chainId,
           asset,
           amount,
+          clientLabel: chatLabelFromClientId(requireMcpAuth().clientId),
         });
         return toolJsonContent(
           {

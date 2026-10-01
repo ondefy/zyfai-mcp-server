@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   buildSigningUrl,
+  chatLabelFromClientId,
   consumeEnterActionIntent,
   createEnterActionIntent,
 } from "./enter-action-intent.js";
@@ -11,6 +12,16 @@ describe("enter-action-intent API bridge", () => {
     const url = buildSigningUrl("ticket-abc");
     expect(url).toContain("/agent/deposit-sign?ticket=");
     expect(url).toContain("ticket-abc");
+    expect(url).not.toContain("client=");
+  });
+
+  it("names the chat on the signing URL when the client is known", () => {
+    const url = buildSigningUrl("ticket-abc", "Grok");
+    expect(url).toContain("client=Grok");
+    expect(chatLabelFromClientId("https://grok.com/oauth/client.json")).toBe(
+      "Grok",
+    );
+    expect(chatLabelFromClientId("dyn_unknown")).toBeUndefined();
   });
 
   it("creates via execution API", async () => {
