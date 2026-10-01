@@ -3,6 +3,7 @@ import {
   buildSigningUrl,
   chatLabelFromClientId,
   consumeEnterActionIntent,
+  EnterActionIntentConsumeError,
   createEnterActionIntent,
 } from "./enter-action-intent.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
@@ -43,15 +44,51 @@ describe("enter-action-intent API bridge", () => {
     expect(result.signingUrl).toContain("ticket-xyz");
   });
 
-  it("returns false when consume fails", async () => {
+  it("commits consume after deposit proof", async () => {
     const zyfiApi = {
-      consumeAgentEnterIntent: vi.fn().mockRejectedValue(new Error("nope")),
+      consumeAgentEnterIntent: vi.fn().mockResolvedValue({
+        data: {
+          status: "completed",
+          actionId: "abc",
+          depositId: "dep-1",
+        },
+      }),
     } as unknown as ZyfaiApiService;
-    const ok = await consumeEnterActionIntent(zyfiApi, "abc", {
+    const status = await consumeEnterActionIntent(zyfiApi, "abc", {
       chainId: 8453,
       asset: "USDC",
       amount: "1000000",
+      txHash: `0x${"a".repeat(64)}`,
+      depositId: "dep-1",
     });
-    expect(ok).toBe(false);
+    expect(status.status).toBe("completed");
+  });
+
+  it("surfaces conflict when intent already completed", async () => {
+    const zyfiApi = {
+      consumeAgentEnterIntent: vi.fn().mockRejectedValue(
+        new Error("Signing intent already completed with a different deposit"),
+      ),
+    } as unknown as ZyfaiApiService;
+    await expect(
+      consumeEnterActionIntent(zyfiApi, "abc", {
+        chainId: 8453,
+        asset: "USDC",
+        amount: "1000000",
+        txHash: `0x${"a".repeat(64)}`,
+        depositId: "dep-1",
+      }),
+    ).rejects.toMatchObject({ code: "conflict" });
+  });
+
+  it("requires deposit proof fields", async () => {
+    const zyfiApi = {} as ZyfaiApiService;
+    await expect(
+      consumeEnterActionIntent(zyfiApi, "abc", {
+        chainId: 8453,
+        asset: "USDC",
+        amount: "1000000",
+      }),
+    ).rejects.toBeInstanceOf(EnterActionIntentConsumeError);
   });
 });

@@ -205,10 +205,12 @@ export class ZyfaiApiService {
       chainId: SupportedChainId;
       amount: string;
       asset: SupportedAsset;
+      txHash: string;
+      depositId: string;
     },
   ) {
     const sdk = await this.sdkForUserScoped();
-    await sdk.consumeAgentEnterIntent(actionId, params);
+    return sdk.consumeAgentEnterIntent(actionId, params);
   }
 }
 

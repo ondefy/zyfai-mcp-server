@@ -100,13 +100,22 @@ export function registerAgentWriteTools(
         if (!scopeIncludes("mcp:tools:write:deposit")) {
           return toolError("Missing scope mcp:tools:write:deposit");
         }
-        const consumed = await consumeEnterActionIntent(zyfiApi, actionId, {
-          chainId,
-          asset,
-          amount,
-        });
-        if (!consumed) {
-          return toolError("Invalid or expired actionId for this deposit");
+        const existing = await zyfiApi.getAgentEnterIntentStatus(actionId);
+        if (
+          existing.data.status === "completed" &&
+          existing.data.depositId
+        ) {
+          const payload: Record<string, unknown> = {
+            intent: existing.data,
+            actionId,
+          };
+          if (waitForCredit) {
+            payload.credited = await zyfiApi.waitForDepositCredit(
+              existing.data.depositId,
+              chainId,
+            );
+          }
+          return toolJsonContent(payload, "Deposit already registered");
         }
         const logged = await zyfiApi.logDeposit(
           chainId,
@@ -114,17 +123,31 @@ export function registerAgentWriteTools(
           amount,
           tokenAddress,
         );
-        if (waitForCredit && logged.deposit?.id) {
+        const depositId = logged.deposit?.id;
+        if (!depositId) {
+          return toolError("Deposit was not accepted by the execution API");
+        }
+        const intent = await consumeEnterActionIntent(zyfiApi, actionId, {
+          chainId,
+          asset,
+          amount,
+          txHash,
+          depositId,
+        });
+        if (waitForCredit) {
           const credited = await zyfiApi.waitForDepositCredit(
-            logged.deposit.id,
+            depositId,
             chainId,
           );
           return toolJsonContent(
-            { logged, credited, actionId },
+            { logged, credited, actionId, intent },
             "Deposit registered",
           );
         }
-        return toolJsonContent({ logged, actionId }, "Deposit registered");
+        return toolJsonContent(
+          { logged, actionId, intent },
+          "Deposit registered",
+        );
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
