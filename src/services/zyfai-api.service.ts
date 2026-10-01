@@ -143,6 +143,15 @@ export class ZyfaiApiService {
     return sdk.updateUserProfile(request);
   }
 
+  async setAssetStrategy(params: {
+    asset: SupportedAsset;
+    strategy?: Strategy;
+    chains?: SupportedChainId[];
+  }) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.setAssetStrategy(params);
+  }
+
   async customizeBatch(customizations: CustomizationConfig[]) {
     const sdk = await this.sdkForUserScoped();
     return sdk.customizeBatch(customizations);

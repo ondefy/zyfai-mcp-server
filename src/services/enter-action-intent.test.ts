@@ -44,6 +44,31 @@ describe("enter-action-intent API bridge", () => {
     expect(result.signingUrl).toContain("ticket-xyz");
   });
 
+  it("forwards strategy to createAgentEnterIntent", async () => {
+    const createAgentEnterIntent = vi.fn().mockResolvedValue({
+      data: {
+        actionId: "abc123",
+        expiresAt: "2099-01-01T00:00:00.000Z",
+        signingTicket: "ticket-xyz",
+      },
+    });
+    const zyfiApi = {
+      createAgentEnterIntent,
+    } as unknown as ZyfaiApiService;
+    await createEnterActionIntent(zyfiApi, {
+      chainId: 8453,
+      asset: "USDC",
+      amount: "1000000",
+      strategy: "aggressive",
+    });
+    expect(createAgentEnterIntent).toHaveBeenCalledWith({
+      chainId: 8453,
+      amount: "1000000",
+      asset: "USDC",
+      strategy: "aggressive",
+    });
+  });
+
   it("commits consume after deposit proof", async () => {
     const zyfiApi = {
       consumeAgentEnterIntent: vi.fn().mockResolvedValue({
