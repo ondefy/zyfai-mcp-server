@@ -23,7 +23,7 @@ describe("authorizeMcpToolCall", () => {
       status: 401,
       error: "unauthorized",
     });
-    expect(authorizeMcpToolCall("enter_position", undefined)).toMatchObject({
+    expect(authorizeMcpToolCall("register_deposit", undefined)).toMatchObject({
       ok: false,
       status: 401,
     });
@@ -42,6 +42,7 @@ describe("authorizeMcpToolCall", () => {
   it("advertises write scopes only when write tools are enabled", () => {
     expect(protectedResourceScopes(false)).toEqual(["mcp:tools:read"]);
     expect(protectedResourceScopes(true)).toContain("mcp:tools:write:deposit");
+    expect(protectedResourceScopes(true)).not.toContain("mcp:tools:write");
   });
 
   it("allows a session that includes the tool scope", () => {
@@ -49,7 +50,7 @@ describe("authorizeMcpToolCall", () => {
       authorizeMcpToolCall("preview_action", { scope: "mcp:tools:read" }),
     ).toEqual({ ok: true });
     expect(
-      authorizeMcpToolCall("enter_position", {
+      authorizeMcpToolCall("register_deposit", {
         scope: "mcp:tools:read mcp:tools:write:deposit",
       }),
     ).toEqual({ ok: true });

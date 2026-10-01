@@ -45,6 +45,7 @@ export class ZyfaiApiService {
       accessToken,
       userId: auth.userId,
       eoa: auth.eoa as `0x${string}`,
+      channel: "agent",
     });
     return sdk;
   }
@@ -173,18 +174,19 @@ export class ZyfaiApiService {
     return sdk.getDepositStatus(depositId);
   }
 
-  async waitForDepositCredit(
-    depositId: string,
-    chainId: SupportedChainId,
-  ) {
+  async waitForDepositCredit(depositId: string, chainId: SupportedChainId) {
     const sdk = await this.sdkForUserScoped();
     return sdk.waitForDepositCredit(depositId, chainId);
   }
 
-  async getAgentMandate() {
-    const auth = requireMcpAuth();
+  async getAssetTypeSettings() {
     const sdk = await this.sdkForUserScoped();
-    return sdk.getAgentMandate(auth.clientId);
+    return sdk.getAssetTypeSettings();
+  }
+
+  async getAgentEnterIntentStatus(actionId: string) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.getAgentEnterIntentStatus(actionId);
   }
 
   async createAgentEnterIntent(params: {
@@ -208,23 +210,12 @@ export class ZyfaiApiService {
     const sdk = await this.sdkForUserScoped();
     await sdk.consumeAgentEnterIntent(actionId, params);
   }
-
-  async withdrawFunds(
-    userAddress: string,
-    chainId: SupportedChainId,
-    amount?: string,
-    tokenSymbol?: string,
-  ) {
-    const sdk = await this.sdkForUserScoped();
-    return sdk.withdrawFunds(userAddress, chainId, amount, tokenSymbol);
-  }
 }
 
 function buildSdkConfig(apiKey: string): SDKConfig {
   const env = config.backendEnvironment;
   const executionApiUrl =
-    config.executionApiUrl ??
-    (env ? getExecutionApiBaseUrl(env) : undefined);
+    config.executionApiUrl ?? (env ? getExecutionApiBaseUrl(env) : undefined);
   const dataApiUrl =
     config.dataApiUrl ?? (env ? getDataApiBaseUrl(env) : undefined);
 

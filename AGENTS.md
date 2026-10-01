@@ -68,6 +68,8 @@ MCP endpoint: `http://localhost:3005/mcp` (health: `/health`). Point Cursor at t
 
 With `MCP_AUTH_REQUIRED=true`, `zyfai-api` must be up for OAuth (`MCP_OAUTH_JWT_SECRET` / `MCP_RESOURCE_URL` aligned in both `.env` files). `dev:zyfai-mcp` starts the API; wait for `:3000` before expecting Cursor OAuth to succeed.
 
+**New-user deposit E2E (local):** run the wallet pool (`pnpm dev:predeployment` from workspace root) so MCP OAuth can reserve a Safe; set `MCP_WRITE_TOOLS_ENABLED=true` and `ZYFAI_WEB_SIGNING_BASE=http://localhost:4004` (monorepo `pnpm dev:zyfi`). Complete OAuth for the MCP client, then call `prepare_deposit` (persists first-chain profile via `POST /users/me/agent-deposit-setup` when needed) before the user signs via `signingUrl`.
+
 From workspace root, full stack with MCP: `pnpm dev -- --mcp` (or `pnpm dev:mcp`) adds pool + frontend. Sets `ZYFAI_BACKEND_ENV=local` on the MCP process (execution → `http://localhost:3000`). For opportunity reads, set `ZYFAI_DATA_API_URL` in `.env` to staging defi-api unless you run `zyfai-defi-api` locally on `:3000`.
 
 Restore npm `@zyfai/sdk`: `rm zyfai-mcp-server/pnpm-workspace.yaml && cd zyfai-mcp-server && pnpm install`.

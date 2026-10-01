@@ -6,4 +6,4 @@
 4. Scan Tools in OpenAI plugin portal; annotations must match tool behaviour (`readOnlyHint`, `destructiveHint`, `openWorldHint`).
 5. Starter prompts: see `../docs/golden-prompts.md`.
 6. Inspector checklist: initialize → tools/list (no write tools by default) → one read golden prompt → optional second MCP process instance.
-7. Public write tools stay off in production until `MCP_WRITE_TOOLS_ENABLED=true` and mandates are configured per client on zyf.ai (Transparency → Agent access).
+7. Public write tools stay off in production until `MCP_WRITE_TOOLS_ENABLED=true` on a dedicated write deployment with its own `MCP_RESOURCE_URL`.

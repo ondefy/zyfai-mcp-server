@@ -27,8 +27,8 @@ export function requiredScopeForTool(toolName: string): string | undefined {
     "get_portfolio",
     "get_positions",
     "preview_action",
-    "get_agent_permissions",
-    "get_action_status",
+    "get_settings",
+    "get_deposit_status",
     "get_earnings",
     "get_daily_earnings",
     "get_apy_history",
@@ -39,20 +39,16 @@ export function requiredScopeForTool(toolName: string): string | undefined {
   if (readTools.has(toolName)) {
     return "mcp:tools:read";
   }
-  if (toolName === "enter_position" || toolName === "prepare_enter_position") {
+  if (toolName === "register_deposit" || toolName === "prepare_deposit") {
     return "mcp:tools:write:deposit";
   }
-  if (toolName === "exit_position") {
-    return "mcp:tools:write";
-  }
-  if (toolName === "customize_position") {
+  if (toolName === "update_settings") {
     return "mcp:tools:write:configure";
   }
   return undefined;
 }
 
 const WRITE_TOOL_SCOPES = [
-  "mcp:tools:write",
   "mcp:tools:write:configure",
   "mcp:tools:write:deposit",
 ] as const;

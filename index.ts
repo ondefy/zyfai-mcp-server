@@ -31,7 +31,7 @@ async function main() {
         `\n🔧 MCP auth required: ${config.mcpAuthRequired} (bearer validated when present)`,
       );
       console.log(
-        `   Tools: agent (account, portfolio, deposits, mandate),`,
+        `   Tools: agent (account, portfolio, deposits, settings),`,
       );
       console.log(
         `   session reads (history, earnings, rebalance tier),`,

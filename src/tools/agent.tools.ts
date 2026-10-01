@@ -131,7 +131,7 @@ export function registerAgentTools(
 
   server.tool(
     "find_opportunities",
-    "Discover yield opportunities by strategy and optional chain filter.",
+    "Discover yield opportunities Zyfai currently tracks. Informational only—funding uses prepare_deposit; allocation follows the user's Zyfai settings.",
     {
       strategy: z
         .enum(["conservative", "aggressive"])
@@ -225,16 +225,16 @@ export function registerAgentTools(
   );
 
   server.tool(
-    "get_agent_permissions",
-    "Get the agent mandate for this OAuth client (chains, assets, rebalance/withdraw flags).",
+    "get_settings",
+    "Get the user's canonical Zyfai management settings (per-asset strategy, chains, protocols).",
     {},
     READ_TOOL_ANNOTATIONS,
     async () => {
       try {
         requireAuthForTool();
         requireReadScope();
-        const response = await zyfiApi.getAgentMandate();
-        return toolJsonContent(response, "Agent mandate");
+        const settings = await zyfiApi.getAssetTypeSettings();
+        return toolJsonContent(settings, "Zyfai settings");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -244,18 +244,29 @@ export function registerAgentTools(
   );
 
   server.tool(
-    "get_action_status",
-    "Poll deposit handover and credit lifecycle for a deposit id.",
+    "get_deposit_status",
+    "Poll deposit progress. Pass actionId after prepare_deposit (intent status), or depositId after registration (handover and credit lifecycle).",
     {
-      depositId: z.string(),
+      actionId: z.string().optional(),
+      depositId: z.string().optional(),
     },
     READ_TOOL_ANNOTATIONS,
-    async ({ depositId }) => {
+    async ({ actionId, depositId }) => {
       try {
         requireAuthForTool();
         requireReadScope();
-        const status = await zyfiApi.getDepositStatus(depositId);
-        return toolJsonContent(status, "Deposit lifecycle status");
+        if (actionId && depositId) {
+          return toolError("Provide actionId or depositId, not both");
+        }
+        if (actionId) {
+          const { data } = await zyfiApi.getAgentEnterIntentStatus(actionId);
+          return toolJsonContent(data, "Deposit intent status");
+        }
+        if (depositId) {
+          const status = await zyfiApi.getDepositStatus(depositId);
+          return toolJsonContent(status, "Deposit lifecycle status");
+        }
+        return toolError("actionId or depositId is required");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

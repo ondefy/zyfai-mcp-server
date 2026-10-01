@@ -1,13 +1,11 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { requireMcpAuth, scopeIncludes } from "../auth/request-context.js";
+import { scopeIncludes } from "../auth/request-context.js";
 import {
   authenticatedEoa,
   requireAuthForTool,
 } from "../auth/user-scope.js";
-import {
-  executionChainIdSchema,
-} from "../config/chains.js";
+import { executionChainIdSchema } from "../config/chains.js";
 import {
   consumeEnterActionIntent,
   createEnterActionIntent,
@@ -19,20 +17,69 @@ import {
 } from "./tool-annotations.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
 
+const depositAssetSchema = z.enum(["USDC", "WETH", "EURC", "NVDAc"]);
+
 /** Financial write tools (opt-in via MCP_WRITE_TOOLS_ENABLED). */
 export function registerAgentWriteTools(
   server: McpServer,
   zyfiApi: ZyfaiApiService,
 ) {
+  const prepareDepositSchema = {
+    chainId: executionChainIdSchema,
+    amount: z.string().describe("Amount in least units"),
+    asset: depositAssetSchema,
+  };
+
   server.tool(
-    "enter_position",
-    "Register a funded deposit after the user signed the ERC-20 transfer to their Safe.",
+    "prepare_deposit",
+    "Prepare an ERC-20 transfer into the user's Zyfai wallet. Returns transfer calldata, a deposit intent actionId, and signingUrl. The user signs in a normal browser—not inside the MCP host. Then poll get_deposit_status or call register_deposit if the signing page did not register the tx.",
+    prepareDepositSchema,
+    WRITE_DEPOSIT_ANNOTATIONS,
+    async ({ chainId, amount, asset }) => {
+      try {
+        requireAuthForTool();
+        if (!scopeIncludes("mcp:tools:write:deposit")) {
+          return toolError("Missing scope mcp:tools:write:deposit");
+        }
+        const eoa = authenticatedEoa();
+        const response = await zyfiApi.prepareEnterPosition({
+          userAddress: eoa,
+          chainId,
+          amount,
+          asset,
+        });
+        const intent = await createEnterActionIntent(zyfiApi, {
+          chainId,
+          asset,
+          amount,
+        });
+        return toolJsonContent(
+          {
+            ...response,
+            actionId: intent.actionId,
+            signingUrl: intent.signingUrl,
+            nextStep:
+              "Open signingUrl in the user's browser. After they sign, poll get_deposit_status with actionId until status is completed.",
+          },
+          "Deposit preparation",
+        );
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "register_deposit",
+    "Tell Zyfai the user funded their Zyfai wallet with this signed transfer. Use after prepare_deposit when the signing page did not complete registration.",
     {
-      actionId: z.string().describe("From prepare_enter_position only"),
+      actionId: z.string().describe("From prepare_deposit only"),
       chainId: executionChainIdSchema,
       txHash: z.string(),
       amount: z.string().describe("Amount in least units"),
-      asset: z.enum(["USDC", "WETH", "EURC", "NVDAc"]),
+      asset: depositAssetSchema,
       tokenAddress: z.string().optional(),
       waitForCredit: z.boolean().optional().default(true),
     },
@@ -84,91 +131,15 @@ export function registerAgentWriteTools(
     },
   );
 
-  server.tool(
-    "prepare_enter_position",
-    "Build ERC-20 transfer calldata to fund the Safe. The user must sign and broadcast that transfer in their own wallet (not inside the MCP host); then call enter_position with the tx hash.",
-    {
-      chainId: executionChainIdSchema,
-      amount: z.string(),
-      asset: z.enum(["USDC", "WETH", "EURC", "NVDAc"]),
-      strategy: z
-        .enum(["conservative", "aggressive", "yieldmaxxing"])
-        .optional(),
-    },
-    WRITE_DEPOSIT_ANNOTATIONS,
-    async ({ chainId, amount, asset, strategy }) => {
-      try {
-        requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write:deposit")) {
-          return toolError("Missing scope mcp:tools:write:deposit");
-        }
-        const eoa = authenticatedEoa();
-        const response = await zyfiApi.prepareEnterPosition({
-          userAddress: eoa,
-          chainId,
-          amount,
-          asset,
-          strategy,
-        });
-        const actionId = await createEnterActionIntent(zyfiApi, {
-          chainId,
-          asset,
-          amount,
-          strategy,
-        });
-        return toolJsonContent(
-          { ...response, actionId },
-          "Transfer preparation",
-        );
-      } catch (error) {
-        return toolError(
-          error instanceof Error ? error.message : "Unknown error",
-        );
-      }
-    },
-  );
+  const strategySchema = z.enum(["conservative", "aggressive", "yieldmaxxing"]);
 
   server.tool(
-    "exit_position",
-    "Withdraw from Zyfai positions back to the owner's account (not a third-party transfer).",
+    "update_settings",
+    "Update the user's canonical Zyfai management settings (strategy, chains, protocols). Send only fields you want to change. Allocation after deposit uses these settings.",
     {
-      chainId: executionChainIdSchema,
-      tokenSymbol: z.string().optional(),
-      amount: z
-        .string()
-        .optional()
-        .describe("Partial amount in least units; omit for full exit"),
-    },
-    WRITE_DESTRUCTIVE_ANNOTATIONS,
-    async ({ chainId, tokenSymbol, amount }) => {
-      try {
-        requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write")) {
-          return toolError("Missing scope mcp:tools:write");
-        }
-        const eoa = authenticatedEoa();
-        const response = await zyfiApi.withdrawFunds(
-          eoa,
-          chainId,
-          amount,
-          tokenSymbol,
-        );
-        return toolJsonContent(response, "Withdraw queued");
-      } catch (error) {
-        return toolError(
-          error instanceof Error ? error.message : "Unknown error",
-        );
-      }
-    },
-  );
-
-  server.tool(
-    "customize_position",
-    "Update strategy, chains, or protocols for capital already in the Safe.",
-    {
-      strategy: z.enum(["conservative", "aggressive", "yieldmaxxing"]),
-      chains: z.array(executionChainIdSchema),
-      asset: z.enum(["USDC", "WETH", "EURC", "NVDAc"]).default("USDC"),
+      asset: depositAssetSchema.default("USDC"),
+      strategy: strategySchema.optional(),
+      chains: z.array(executionChainIdSchema).optional(),
       protocols: z.array(z.string()).optional(),
       autoSelectProtocols: z.boolean().optional(),
     },
@@ -180,13 +151,13 @@ export function registerAgentWriteTools(
           return toolError("Missing scope mcp:tools:write:configure");
         }
         const response = await zyfiApi.updateUserProfile({
-          strategy,
-          chains,
           asset,
-          protocols,
-          autoSelectProtocols,
+          ...(strategy !== undefined && { strategy }),
+          ...(chains !== undefined && { chains }),
+          ...(protocols !== undefined && { protocols }),
+          ...(autoSelectProtocols !== undefined && { autoSelectProtocols }),
         });
-        return toolJsonContent(response, "Profile updated");
+        return toolJsonContent(response, "Settings updated");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

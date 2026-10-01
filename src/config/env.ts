@@ -55,7 +55,12 @@ export const config = {
     process.env.API_PUBLIC_URL?.replace(/\/$/, "") ||
     "https://api.zyf.ai",
 
-  /** When true, register financial write tools (enter/exit/configure). Default off for public plugin. */
+  /** zyf.ai origin for agent deposit signing pages (prepare_deposit signingUrl). */
+  zyfaiWebSigningBase:
+    process.env.ZYFAI_WEB_SIGNING_BASE?.replace(/\/$/, "") ||
+    "https://zyf.ai",
+
+  /** When true, register financial write tools (deposit/register/configure). Default off for public plugin. */
   mcpWriteToolsEnabled:
     process.env.MCP_WRITE_TOOLS_ENABLED === "1" ||
     process.env.MCP_WRITE_TOOLS_ENABLED === "true",

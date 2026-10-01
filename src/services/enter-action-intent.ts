@@ -1,4 +1,5 @@
 import type { SupportedAsset, SupportedChainId } from "@zyfai/sdk";
+import { config } from "../config/env.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
 
 export type EnterActionIntentParams = {
@@ -8,10 +9,21 @@ export type EnterActionIntentParams = {
   strategy?: string;
 };
 
+export type CreatedEnterActionIntent = {
+  actionId: string;
+  signingTicket: string;
+  signingUrl: string;
+};
+
+export function buildSigningUrl(signingTicket: string): string {
+  const base = config.zyfaiWebSigningBase;
+  return `${base}/agent/deposit-sign?ticket=${encodeURIComponent(signingTicket)}`;
+}
+
 export async function createEnterActionIntent(
   zyfiApi: ZyfaiApiService,
   intent: EnterActionIntentParams,
-): Promise<string> {
+): Promise<CreatedEnterActionIntent> {
   const { data } = await zyfiApi.createAgentEnterIntent({
     chainId: intent.chainId,
     amount: intent.amount,
@@ -22,7 +34,11 @@ export async function createEnterActionIntent(
       | "yieldmaxxing"
       | undefined,
   });
-  return data.actionId;
+  return {
+    actionId: data.actionId,
+    signingTicket: data.signingTicket,
+    signingUrl: buildSigningUrl(data.signingTicket),
+  };
 }
 
 export async function consumeEnterActionIntent(
