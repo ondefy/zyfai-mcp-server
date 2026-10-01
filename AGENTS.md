@@ -1,6 +1,6 @@
 # zyfai-mcp-server
 
-Public **DeFi read MCP** over [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk). Streamable HTTP at `/mcp`. Prod: [https://mcp.zyf.ai](https://mcp.zyf.ai).
+Public **DeFi MCP** over [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk). Streamable HTTP at `/mcp`. Prod read URL: [https://mcp.zyf.ai](https://mcp.zyf.ai). Write tools are opt-in per deployment (`MCP_WRITE_TOOLS_ENABLED`).
 
 **Not** [zyf-knowledge-mcp](https://github.com/ondefy/zyf-knowledge-mcp) (internal code/docs search; Cursor alias `zyfai-mcp` in the parent workspace).
 

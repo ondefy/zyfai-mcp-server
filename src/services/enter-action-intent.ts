@@ -1,57 +1,43 @@
-import crypto from "crypto";
+import type { SupportedAsset, SupportedChainId } from "@zyfai/sdk";
+import type { ZyfaiApiService } from "./zyfai-api.service.js";
 
-export type EnterActionIntent = {
-  userId: string;
-  clientId: string;
-  chainId: number;
+export type EnterActionIntentParams = {
+  chainId: SupportedChainId;
   asset: string;
   amount: string;
   strategy?: string;
-  expiresAt: number;
 };
 
-const intents = new Map<string, EnterActionIntent>();
-const TTL_MS = 30 * 60 * 1000;
-
-export function createEnterActionIntent(
-  intent: Omit<EnterActionIntent, "expiresAt">,
-): string {
-  const actionId = crypto.randomBytes(12).toString("base64url");
-  intents.set(actionId, {
-    ...intent,
-    expiresAt: Date.now() + TTL_MS,
+export async function createEnterActionIntent(
+  zyfiApi: ZyfaiApiService,
+  intent: EnterActionIntentParams,
+): Promise<string> {
+  const { data } = await zyfiApi.createAgentEnterIntent({
+    chainId: intent.chainId,
+    amount: intent.amount,
+    asset: intent.asset as SupportedAsset,
+    strategy: intent.strategy as
+      | "conservative"
+      | "aggressive"
+      | "yieldmaxxing"
+      | undefined,
   });
-  return actionId;
+  return data.actionId;
 }
 
-export function consumeEnterActionIntent(
+export async function consumeEnterActionIntent(
+  zyfiApi: ZyfaiApiService,
   actionId: string,
-  expected: Omit<EnterActionIntent, "expiresAt" | "strategy"> & {
-    strategy?: string;
-  },
-): EnterActionIntent | null {
-  const record = intents.get(actionId);
-  intents.delete(actionId);
-  if (!record || record.expiresAt < Date.now()) {
-    return null;
-  }
-  if (
-    record.userId !== expected.userId ||
-    record.clientId !== expected.clientId ||
-    record.chainId !== expected.chainId ||
-    record.asset.toUpperCase() !== expected.asset.toUpperCase() ||
-    record.amount !== expected.amount
-  ) {
-    return null;
-  }
-  return record;
-}
-
-export function pruneExpiredIntents(): void {
-  const now = Date.now();
-  for (const [id, record] of intents) {
-    if (record.expiresAt < now) {
-      intents.delete(id);
-    }
+  expected: EnterActionIntentParams,
+): Promise<boolean> {
+  try {
+    await zyfiApi.consumeAgentEnterIntent(actionId, {
+      chainId: expected.chainId,
+      amount: expected.amount,
+      asset: expected.asset as SupportedAsset,
+    });
+    return true;
+  } catch {
+    return false;
   }
 }

@@ -187,6 +187,28 @@ export class ZyfaiApiService {
     return sdk.getAgentMandate(auth.clientId);
   }
 
+  async createAgentEnterIntent(params: {
+    chainId: SupportedChainId;
+    amount: string;
+    asset: SupportedAsset;
+    strategy?: Strategy;
+  }) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.createAgentEnterIntent(params);
+  }
+
+  async consumeAgentEnterIntent(
+    actionId: string,
+    params: {
+      chainId: SupportedChainId;
+      amount: string;
+      asset: SupportedAsset;
+    },
+  ) {
+    const sdk = await this.sdkForUserScoped();
+    await sdk.consumeAgentEnterIntent(actionId, params);
+  }
+
   async withdrawFunds(
     userAddress: string,
     chainId: SupportedChainId,

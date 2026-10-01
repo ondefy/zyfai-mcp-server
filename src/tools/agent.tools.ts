@@ -14,7 +14,6 @@ import {
   optionalChainIdSchema,
   CHAIN_ID_DESCRIPTION,
 } from "../config/chains.js";
-import { createEnterActionIntent } from "../services/enter-action-intent.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import { buildOpportunityId } from "./opportunity-id.js";
 import { READ_TOOL_ANNOTATIONS } from "./tool-annotations.js";
@@ -213,21 +212,8 @@ export function registerAgentTools(
           strategy,
           minSplit,
         });
-        const auth = getMcpAuth();
-        let actionId: string | undefined;
-        if (auth) {
-          const chainId = Array.isArray(networks) ? networks[0] : networks;
-          actionId = createEnterActionIntent({
-            userId: auth.userId,
-            clientId: auth.clientId,
-            chainId,
-            asset: token,
-            amount: String(amount),
-            strategy,
-          });
-        }
         return toolJsonContent(
-          { simulation: response, actionId },
+          { simulation: response },
           "Allocation preview",
         );
       } catch (error) {

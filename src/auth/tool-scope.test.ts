@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { authorizeMcpToolCall } from "./tool-scope.js";
+import {
+  authorizeMcpToolCall,
+  protectedResourceScopes,
+} from "./tool-scope.js";
 
 describe("authorizeMcpToolCall", () => {
   it("allows public discovery tools without a session", () => {
@@ -34,6 +37,11 @@ describe("authorizeMcpToolCall", () => {
       status: 403,
       error: "insufficient_scope",
     });
+  });
+
+  it("advertises write scopes only when write tools are enabled", () => {
+    expect(protectedResourceScopes(false)).toEqual(["mcp:tools:read"]);
+    expect(protectedResourceScopes(true)).toContain("mcp:tools:write:deposit");
   });
 
   it("allows a session that includes the tool scope", () => {

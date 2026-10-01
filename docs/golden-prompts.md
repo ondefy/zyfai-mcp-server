@@ -15,7 +15,7 @@ Use with a read-only OAuth grant (`mcp:tools:read`) unless noted.
 
 ## Writes (requires `MCP_WRITE_TOOLS_ENABLED` on server and matching OAuth scopes)
 
-6. **Enter:** Use `preview_action` or `prepare_enter_position`, sign the transfer, then `enter_position` with the returned `actionId` and tx hash.
+6. **Enter:** `prepare_enter_position` (returns `actionId` and transfer calldata), sign and broadcast the transfer in the user's wallet, then `enter_position` with that `actionId` and tx hash. `preview_action` does not mint an `actionId`.
 7. **Exit:** "Exit my Base USDC position back to my wallet."
 
 ## Negative / safety

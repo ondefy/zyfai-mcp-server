@@ -28,7 +28,7 @@ export function registerAgentWriteTools(
     "enter_position",
     "Register a funded deposit after the user signed the ERC-20 transfer to their Safe.",
     {
-      actionId: z.string().describe("From preview_action or prepare_enter_position"),
+      actionId: z.string().describe("From prepare_enter_position only"),
       chainId: executionChainIdSchema,
       txHash: z.string(),
       amount: z.string().describe("Amount in least units"),
@@ -51,15 +51,12 @@ export function registerAgentWriteTools(
         if (!scopeIncludes("mcp:tools:write:deposit")) {
           return toolError("Missing scope mcp:tools:write:deposit");
         }
-        const auth = requireMcpAuth();
-        const intent = consumeEnterActionIntent(actionId, {
-          userId: auth.userId,
-          clientId: auth.clientId,
+        const consumed = await consumeEnterActionIntent(zyfiApi, actionId, {
           chainId,
           asset,
           amount,
         });
-        if (!intent) {
+        if (!consumed) {
           return toolError("Invalid or expired actionId for this deposit");
         }
         const logged = await zyfiApi.logDeposit(
@@ -89,7 +86,7 @@ export function registerAgentWriteTools(
 
   server.tool(
     "prepare_enter_position",
-    "Build ERC-20 transfer calldata to fund the Safe; the user must sign on-chain before enter_position.",
+    "Build ERC-20 transfer calldata to fund the Safe. The user must sign and broadcast that transfer in their own wallet (not inside the MCP host); then call enter_position with the tx hash.",
     {
       chainId: executionChainIdSchema,
       amount: z.string(),
@@ -105,7 +102,6 @@ export function registerAgentWriteTools(
         if (!scopeIncludes("mcp:tools:write:deposit")) {
           return toolError("Missing scope mcp:tools:write:deposit");
         }
-        const auth = requireMcpAuth();
         const eoa = authenticatedEoa();
         const response = await zyfiApi.prepareEnterPosition({
           userAddress: eoa,
@@ -114,9 +110,7 @@ export function registerAgentWriteTools(
           asset,
           strategy,
         });
-        const actionId = createEnterActionIntent({
-          userId: auth.userId,
-          clientId: auth.clientId,
+        const actionId = await createEnterActionIntent(zyfiApi, {
           chainId,
           asset,
           amount,
