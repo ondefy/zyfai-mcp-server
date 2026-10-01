@@ -1,8 +1,4 @@
-import type {
-  AgentEnterIntentStatus,
-  SupportedAsset,
-  SupportedChainId,
-} from "@zyfai/sdk";
+import type { SupportedAsset, SupportedChainId } from "@zyfai/sdk";
 import { config } from "../config/env.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
 
@@ -101,7 +97,9 @@ export async function consumeEnterActionIntent(
   zyfiApi: ZyfaiApiService,
   actionId: string,
   expected: EnterActionIntentParams,
-): Promise<AgentEnterIntentStatus> {
+): Promise<
+  Awaited<ReturnType<ZyfaiApiService["consumeAgentEnterIntent"]>>["data"]
+> {
   if (!expected.txHash || !expected.depositId) {
     throw new EnterActionIntentConsumeError(
       "txHash and depositId are required to commit an enter intent",
