@@ -8,6 +8,7 @@ import { config as loadDotenv } from "dotenv";
 loadDotenv();
 
 import type { BackendEnvironment } from "@zyfai/sdk";
+import { normalizeZyfaiWebSigningBase } from "./normalize-signing-base.js";
 
 function parseBackendEnvironment(): BackendEnvironment | undefined {
   const value = process.env.ZYFAI_BACKEND_ENV?.trim().toLowerCase();
@@ -56,9 +57,9 @@ export const config = {
     "https://api.zyf.ai",
 
   /** zyf.ai origin for agent deposit signing pages (prepare_deposit signingUrl). */
-  zyfaiWebSigningBase:
-    process.env.ZYFAI_WEB_SIGNING_BASE?.replace(/\/$/, "") ||
-    "https://zyf.ai",
+  zyfaiWebSigningBase: normalizeZyfaiWebSigningBase(
+    process.env.ZYFAI_WEB_SIGNING_BASE,
+  ),
 
   /** When true, register financial write tools (deposit/register/configure). Default off for public plugin. */
   mcpWriteToolsEnabled:
