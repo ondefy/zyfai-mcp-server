@@ -45,12 +45,16 @@ export function requiredScopeForTool(toolName: string): string | undefined {
   if (toolName === "update_settings") {
     return "mcp:tools:write:configure";
   }
+  if (toolName === "withdraw") {
+    return "mcp:tools:write:withdraw";
+  }
   return undefined;
 }
 
 const WRITE_TOOL_SCOPES = [
   "mcp:tools:write:configure",
   "mcp:tools:write:deposit",
+  "mcp:tools:write:withdraw",
 ] as const;
 
 /**
@@ -74,6 +78,50 @@ export function insufficientScopeWwwAuthenticate(): string {
  * Public tools pass with no session. Protected tools without a session are 401
  * so the host can start OAuth. A present session must include the tool scope.
  */
+function isToolsCallRpc(
+  value: unknown,
+): value is { method?: string; params?: { name?: string } } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    (value as { method?: string }).method === "tools/call"
+  );
+}
+
+/** Collect tool names from a single JSON-RPC object or batch array. */
+export function collectToolsCallNames(body: unknown): string[] {
+  if (Array.isArray(body)) {
+    return body
+      .filter(isToolsCallRpc)
+      .map((rpc) => rpc.params?.name ?? "")
+      .filter(Boolean);
+  }
+  if (isToolsCallRpc(body)) {
+    const name = body.params?.name;
+    return name ? [name] : [];
+  }
+  return [];
+}
+
+/**
+ * Authorize every tools/call in a JSON-RPC payload (object or batch).
+ * Non-tool requests pass without auth checks.
+ */
+export function authorizeMcpRequestBody(
+  body: unknown,
+  auth: { scope: string } | undefined,
+): McpToolCallAuth {
+  const toolNames = collectToolsCallNames(body);
+  for (const toolName of toolNames) {
+    const decision = authorizeMcpToolCall(toolName, auth);
+    if (!decision.ok) {
+      return decision;
+    }
+  }
+  return { ok: true };
+}
+
 export function authorizeMcpToolCall(
   toolName: string,
   auth: { scope: string } | undefined,

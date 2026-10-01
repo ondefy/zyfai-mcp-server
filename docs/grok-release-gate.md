@@ -11,7 +11,7 @@ Run after deploying **zyfai-api** (enter intents + signing tickets), **zyf.ai** 
 ## Checklist
 
 1. **Read URL unchanged:** `https://mcp.zyf.ai/mcp` `tools/list` has no `prepare_deposit`, `register_deposit`, or `update_settings`.
-2. **Write URL metadata:** `GET {writeOrigin}/.well-known/oauth-protected-resource` lists `mcp:tools:write:deposit` and `mcp:tools:write:configure` when writes are enabled (not `mcp:tools:write` unless a withdraw tool is registered).
+2. **Write URL metadata:** `GET {writeOrigin}/.well-known/oauth-protected-resource` lists `mcp:tools:write:deposit`, `mcp:tools:write:withdraw`, and `mcp:tools:write:configure` when writes are enabled (not generic `mcp:tools:write`).
 3. **Grok connect:** Custom connector → paste write `/mcp` URL → complete OAuth.
 4. **Read path:** `get_account`, `find_opportunities` (Base, conservative USDC).
 5. **Preview:** `preview_action` returns simulation only (no `actionId`).

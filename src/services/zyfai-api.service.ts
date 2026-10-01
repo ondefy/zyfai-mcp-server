@@ -157,15 +157,24 @@ export class ZyfaiApiService {
     return sdk.customizeBatch(customizations);
   }
 
-  async prepareEnterPosition(params: {
+  async prepareDeposit(params: {
     userAddress: string;
     chainId: SupportedChainId;
     amount: string;
     asset: SupportedAsset;
-    strategy?: Strategy;
   }) {
     const sdk = await this.sdkForUserScoped();
-    return sdk.prepareEnterPosition(params);
+    return sdk.prepareDeposit(params);
+  }
+
+  async withdrawFunds(
+    userAddress: string,
+    chainId: SupportedChainId,
+    amount?: string,
+    tokenSymbol?: string,
+  ) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.withdrawFunds(userAddress, chainId, amount, tokenSymbol);
   }
 
   async logDeposit(
@@ -193,22 +202,21 @@ export class ZyfaiApiService {
     return sdk.getAssetTypeSettings();
   }
 
-  async getAgentEnterIntentStatus(actionId: string) {
+  async getAgentDepositIntentStatus(actionId: string) {
     const sdk = await this.sdkForUserScoped();
-    return sdk.getAgentEnterIntentStatus(actionId);
+    return sdk.getAgentDepositIntentStatus(actionId);
   }
 
-  async createAgentEnterIntent(params: {
+  async createAgentDepositIntent(params: {
     chainId: SupportedChainId;
     amount: string;
     asset: SupportedAsset;
-    strategy?: Strategy;
   }) {
     const sdk = await this.sdkForUserScoped();
-    return sdk.createAgentEnterIntent(params);
+    return sdk.createAgentDepositIntent(params);
   }
 
-  async consumeAgentEnterIntent(
+  async consumeAgentDepositIntent(
     actionId: string,
     params: {
       chainId: SupportedChainId;
@@ -219,7 +227,7 @@ export class ZyfaiApiService {
     },
   ) {
     const sdk = await this.sdkForUserScoped();
-    return sdk.consumeAgentEnterIntent(actionId, params);
+    return sdk.consumeAgentDepositIntent(actionId, params);
   }
 }
 

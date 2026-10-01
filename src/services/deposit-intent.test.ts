@@ -2,13 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildSigningUrl,
   chatLabelFromClientId,
-  consumeEnterActionIntent,
-  EnterActionIntentConsumeError,
-  createEnterActionIntent,
-} from "./enter-action-intent.js";
+  consumeDepositIntent,
+  DepositIntentConsumeError,
+  createDepositIntent,
+} from "./deposit-intent.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
 
-describe("enter-action-intent API bridge", () => {
+describe("deposit-intent API bridge", () => {
   it("builds signing URL with ticket query", () => {
     const url = buildSigningUrl("ticket-abc");
     expect(url).toContain("/agent/deposit-sign?ticket=");
@@ -27,7 +27,7 @@ describe("enter-action-intent API bridge", () => {
 
   it("creates via execution API", async () => {
     const zyfiApi = {
-      createAgentEnterIntent: vi.fn().mockResolvedValue({
+      createAgentDepositIntent: vi.fn().mockResolvedValue({
         data: {
           actionId: "abc123",
           expiresAt: "2099-01-01T00:00:00.000Z",
@@ -35,7 +35,7 @@ describe("enter-action-intent API bridge", () => {
         },
       }),
     } as unknown as ZyfaiApiService;
-    const result = await createEnterActionIntent(zyfiApi, {
+    const result = await createDepositIntent(zyfiApi, {
       chainId: 8453,
       asset: "USDC",
       amount: "1000000",
@@ -44,34 +44,9 @@ describe("enter-action-intent API bridge", () => {
     expect(result.signingUrl).toContain("ticket-xyz");
   });
 
-  it("forwards strategy to createAgentEnterIntent", async () => {
-    const createAgentEnterIntent = vi.fn().mockResolvedValue({
-      data: {
-        actionId: "abc123",
-        expiresAt: "2099-01-01T00:00:00.000Z",
-        signingTicket: "ticket-xyz",
-      },
-    });
-    const zyfiApi = {
-      createAgentEnterIntent,
-    } as unknown as ZyfaiApiService;
-    await createEnterActionIntent(zyfiApi, {
-      chainId: 8453,
-      asset: "USDC",
-      amount: "1000000",
-      strategy: "aggressive",
-    });
-    expect(createAgentEnterIntent).toHaveBeenCalledWith({
-      chainId: 8453,
-      amount: "1000000",
-      asset: "USDC",
-      strategy: "aggressive",
-    });
-  });
-
   it("commits consume after deposit proof", async () => {
     const zyfiApi = {
-      consumeAgentEnterIntent: vi.fn().mockResolvedValue({
+      consumeAgentDepositIntent: vi.fn().mockResolvedValue({
         data: {
           status: "completed",
           actionId: "abc",
@@ -79,7 +54,7 @@ describe("enter-action-intent API bridge", () => {
         },
       }),
     } as unknown as ZyfaiApiService;
-    const status = await consumeEnterActionIntent(zyfiApi, "abc", {
+    const status = await consumeDepositIntent(zyfiApi, "abc", {
       chainId: 8453,
       asset: "USDC",
       amount: "1000000",
@@ -91,12 +66,12 @@ describe("enter-action-intent API bridge", () => {
 
   it("surfaces conflict when intent already completed", async () => {
     const zyfiApi = {
-      consumeAgentEnterIntent: vi.fn().mockRejectedValue(
+      consumeAgentDepositIntent: vi.fn().mockRejectedValue(
         new Error("Signing intent already completed with a different deposit"),
       ),
     } as unknown as ZyfaiApiService;
     await expect(
-      consumeEnterActionIntent(zyfiApi, "abc", {
+      consumeDepositIntent(zyfiApi, "abc", {
         chainId: 8453,
         asset: "USDC",
         amount: "1000000",
@@ -109,11 +84,11 @@ describe("enter-action-intent API bridge", () => {
   it("requires deposit proof fields", async () => {
     const zyfiApi = {} as ZyfaiApiService;
     await expect(
-      consumeEnterActionIntent(zyfiApi, "abc", {
+      consumeDepositIntent(zyfiApi, "abc", {
         chainId: 8453,
         asset: "USDC",
         amount: "1000000",
       }),
-    ).rejects.toBeInstanceOf(EnterActionIntentConsumeError);
+    ).rejects.toBeInstanceOf(DepositIntentConsumeError);
   });
 });

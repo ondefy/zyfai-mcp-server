@@ -8,8 +8,9 @@ import {
 import { executionChainIdSchema } from "../config/chains.js";
 import {
   chatLabelFromClientId,
-  consumeEnterActionIntent,
-} from "../services/enter-action-intent.js";
+  consumeDepositIntent,
+  depositIntentRegistrationMismatch,
+} from "../services/deposit-intent.js";
 import { runPrepareDeposit } from "../services/prepare-deposit.js";
 import type { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import {
@@ -30,19 +31,14 @@ export function registerAgentWriteTools(
     chainId: executionChainIdSchema,
     amount: z.string().describe("Amount in least units"),
     asset: depositAssetSchema,
-    strategy: strategySchema
-      .optional()
-      .describe(
-        "Optional public strategy for this asset on chainId; updates management settings and appears on the signing page",
-      ),
   };
 
   server.tool(
     "prepare_deposit",
-    "Prepare an ERC-20 transfer into the user's Zyfai wallet. Returns transfer calldata, a deposit intent actionId, and signingUrl. Optional strategy updates management settings for this asset and chain before prepare. The user signs in a normal browser—not inside the MCP host. Then poll get_deposit_status or call register_deposit if the signing page did not register the tx.",
+    "Prepare an ERC-20 transfer into the user's Zyfai wallet. Returns transfer calldata, a deposit intent actionId, and signingUrl. The user signs in a normal browser—not inside the MCP host. Then poll get_deposit_status or call register_deposit if the signing page did not register the tx.",
     prepareDepositSchema,
     WRITE_DEPOSIT_ANNOTATIONS,
-    async ({ chainId, amount, asset, strategy }) => {
+    async ({ chainId, amount, asset }) => {
       try {
         requireAuthForTool();
         if (!scopeIncludes("mcp:tools:write:deposit")) {
@@ -54,7 +50,6 @@ export function registerAgentWriteTools(
           chainId,
           amount,
           asset,
-          strategy,
           clientLabel: chatLabelFromClientId(requireMcpAuth().clientId),
         });
         return toolJsonContent(payload, "Deposit preparation");
@@ -93,22 +88,29 @@ export function registerAgentWriteTools(
         if (!scopeIncludes("mcp:tools:write:deposit")) {
           return toolError("Missing scope mcp:tools:write:deposit");
         }
-        const existing = await zyfiApi.getAgentEnterIntentStatus(actionId);
-        if (
-          existing.data.status === "completed" &&
-          existing.data.depositId
-        ) {
+        const existing = await zyfiApi.getAgentDepositIntentStatus(actionId);
+        const intent = existing.data;
+        if (intent.status === "completed" && intent.depositId) {
           const payload: Record<string, unknown> = {
-            intent: existing.data,
+            intent,
             actionId,
           };
           if (waitForCredit) {
             payload.credited = await zyfiApi.waitForDepositCredit(
-              existing.data.depositId,
+              intent.depositId,
               chainId,
             );
           }
           return toolJsonContent(payload, "Deposit already registered");
+        }
+        const mismatch = depositIntentRegistrationMismatch(
+          intent,
+          chainId,
+          asset,
+          amount,
+        );
+        if (mismatch) {
+          return toolError(mismatch);
         }
         const logged = await zyfiApi.logDeposit(
           chainId,
@@ -120,7 +122,7 @@ export function registerAgentWriteTools(
         if (!depositId) {
           return toolError("Deposit was not accepted by the execution API");
         }
-        const intent = await consumeEnterActionIntent(zyfiApi, actionId, {
+        const consumed = await consumeDepositIntent(zyfiApi, actionId, {
           chainId,
           asset,
           amount,
@@ -133,14 +135,43 @@ export function registerAgentWriteTools(
             chainId,
           );
           return toolJsonContent(
-            { logged, credited, actionId, intent },
+            { logged, credited, actionId, intent: consumed },
             "Deposit registered",
           );
         }
         return toolJsonContent(
-          { logged, actionId, intent },
+          { logged, actionId, intent: consumed },
           "Deposit registered",
         );
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "withdraw",
+    "Withdraw funds from the user's Zyfai smart wallet to the owner's address using the existing Zyfai withdrawal backend. Omit amount for a full withdrawal on the chain.",
+    {
+      chainId: executionChainIdSchema,
+      asset: depositAssetSchema.optional(),
+      amount: z
+        .string()
+        .optional()
+        .describe("Partial withdrawal amount in least units; omit for full"),
+    },
+    WRITE_DESTRUCTIVE_ANNOTATIONS,
+    async ({ chainId, asset, amount }) => {
+      try {
+        requireAuthForTool();
+        if (!scopeIncludes("mcp:tools:write:withdraw")) {
+          return toolError("Missing scope mcp:tools:write:withdraw");
+        }
+        const eoa = authenticatedEoa();
+        const result = await zyfiApi.withdrawFunds(eoa, chainId, amount, asset);
+        return toolJsonContent(result, "Withdrawal requested");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

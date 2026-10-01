@@ -259,7 +259,7 @@ export function registerAgentTools(
           return toolError("Provide actionId or depositId, not both");
         }
         if (actionId) {
-          const { data } = await zyfiApi.getAgentEnterIntentStatus(actionId);
+          const { data } = await zyfiApi.getAgentDepositIntentStatus(actionId);
           return toolJsonContent(data, "Deposit intent status");
         }
         if (depositId) {

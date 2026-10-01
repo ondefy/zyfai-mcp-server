@@ -2,15 +2,46 @@ import type { SupportedAsset, SupportedChainId } from "@zyfai/sdk";
 import { config } from "../config/env.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
 
-export type EnterActionIntentParams = {
+export type DepositIntentParams = {
   chainId: SupportedChainId;
   asset: string;
   amount: string;
-  strategy?: string;
   clientLabel?: string;
   txHash?: string;
   depositId?: string;
 };
+
+export type DepositIntentStatusSnapshot = {
+  chainId?: number;
+  asset?: string;
+  amount?: string;
+  status: string;
+};
+
+/** Returns an error message when the intent cannot accept this deposit registration. */
+export function depositIntentRegistrationMismatch(
+  intent: DepositIntentStatusSnapshot,
+  chainId: number,
+  asset: string,
+  amount: string,
+): string | null {
+  if (intent.status === "expired") {
+    return "Deposit intent expired";
+  }
+  if (intent.status !== "pending" && intent.status !== "completed") {
+    return "Invalid deposit intent status";
+  }
+  if (intent.chainId !== chainId) {
+    return "Deposit intent chainId does not match";
+  }
+  if (intent.asset?.toUpperCase() !== asset.toUpperCase()) {
+    return "Deposit intent asset does not match";
+  }
+  if (intent.amount !== amount) {
+    return "Deposit intent amount does not match";
+  }
+  return null;
+}
 
 const CLIENT_HOST_LABELS: { host: string; label: string }[] = [
   { host: "cursor.com", label: "Cursor" },
@@ -45,7 +76,7 @@ export function chatLabelFromClientId(clientId: string): string | undefined {
   return bare[clientId.trim().toLowerCase()];
 }
 
-export type CreatedEnterActionIntent = {
+export type CreatedDepositIntent = {
   actionId: string;
   signingTicket: string;
   signingUrl: string;
@@ -62,19 +93,14 @@ export function buildSigningUrl(
   return `${url}&client=${encodeURIComponent(clientLabel)}`;
 }
 
-export async function createEnterActionIntent(
+export async function createDepositIntent(
   zyfiApi: ZyfaiApiService,
-  intent: EnterActionIntentParams,
-): Promise<CreatedEnterActionIntent> {
-  const { data } = await zyfiApi.createAgentEnterIntent({
+  intent: DepositIntentParams,
+): Promise<CreatedDepositIntent> {
+  const { data } = await zyfiApi.createAgentDepositIntent({
     chainId: intent.chainId,
     amount: intent.amount,
     asset: intent.asset as SupportedAsset,
-    strategy: intent.strategy as
-      | "conservative"
-      | "aggressive"
-      | "yieldmaxxing"
-      | undefined,
   });
   return {
     actionId: data.actionId,
@@ -83,31 +109,31 @@ export async function createEnterActionIntent(
   };
 }
 
-export class EnterActionIntentConsumeError extends Error {
+export class DepositIntentConsumeError extends Error {
   constructor(
     message: string,
     readonly code: "invalid" | "conflict",
   ) {
     super(message);
-    this.name = "EnterActionIntentConsumeError";
+    this.name = "DepositIntentConsumeError";
   }
 }
 
-export async function consumeEnterActionIntent(
+export async function consumeDepositIntent(
   zyfiApi: ZyfaiApiService,
   actionId: string,
-  expected: EnterActionIntentParams,
+  expected: DepositIntentParams,
 ): Promise<
-  Awaited<ReturnType<ZyfaiApiService["consumeAgentEnterIntent"]>>["data"]
+  Awaited<ReturnType<ZyfaiApiService["consumeAgentDepositIntent"]>>["data"]
 > {
   if (!expected.txHash || !expected.depositId) {
-    throw new EnterActionIntentConsumeError(
-      "txHash and depositId are required to commit an enter intent",
+    throw new DepositIntentConsumeError(
+      "txHash and depositId are required to commit a deposit intent",
       "invalid",
     );
   }
   try {
-    const response = await zyfiApi.consumeAgentEnterIntent(actionId, {
+    const response = await zyfiApi.consumeAgentDepositIntent(actionId, {
       chainId: expected.chainId,
       amount: expected.amount,
       asset: expected.asset as SupportedAsset,
@@ -117,10 +143,10 @@ export async function consumeEnterActionIntent(
     return response.data;
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Failed to commit enter intent";
+      error instanceof Error ? error.message : "Failed to commit deposit intent";
     if (/already completed/i.test(message)) {
-      throw new EnterActionIntentConsumeError(message, "conflict");
+      throw new DepositIntentConsumeError(message, "conflict");
     }
-    throw new EnterActionIntentConsumeError(message, "invalid");
+    throw new DepositIntentConsumeError(message, "invalid");
   }
 }

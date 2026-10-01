@@ -5,7 +5,7 @@
 import { Router, Request, Response } from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
-  authorizeMcpToolCall,
+  authorizeMcpRequestBody,
   insufficientScopeWwwAuthenticate,
 } from "../auth/tool-scope.js";
 import { runWithMcpAuth } from "../auth/request-context.js";
@@ -25,23 +25,20 @@ async function handleMcpRequest(
   body?: unknown,
 ) {
   const mcpAuth = (req as RequestWithMcpAuth).mcpAuth;
-  if (body && typeof body === "object" && !Array.isArray(body)) {
-    const rpc = body as { method?: string; params?: { name?: string } };
-    if (rpc.method === "tools/call") {
-      const decision = authorizeMcpToolCall(rpc.params?.name ?? "", mcpAuth);
-      if (!decision.ok) {
-        res.setHeader(
-          "WWW-Authenticate",
-          decision.status === 401
-            ? wwwAuthenticateHeader()
-            : insufficientScopeWwwAuthenticate(),
-        );
-        res.status(decision.status).json({
-          error: decision.error,
-          message: decision.message,
-        });
-        return;
-      }
+  if (body !== undefined) {
+    const decision = authorizeMcpRequestBody(body, mcpAuth);
+    if (!decision.ok) {
+      res.setHeader(
+        "WWW-Authenticate",
+        decision.status === 401
+          ? wwwAuthenticateHeader()
+          : insufficientScopeWwwAuthenticate(),
+      );
+      res.status(decision.status).json({
+        error: decision.error,
+        message: decision.message,
+      });
+      return;
     }
   }
   if (mcpAuth) {
