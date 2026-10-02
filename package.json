@@ -34,7 +34,8 @@
   },
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit && pnpm run build",
+    "check": "tsc --noEmit && pnpm run build && pnpm run test:unit",
+    "test:unit": "vitest run --exclude 'src/integration/**' --fileParallelism=false",
     "test:integration": "sh -c 'if [ -n \"$1\" ]; then vitest run src/integration/$1.integration.test.ts --fileParallelism=false; else vitest run src/integration --fileParallelism=false; fi' --",
     "test:integration:local": "ZYFAI_ENV=local pnpm dlx wait-on tcp:127.0.0.1:3000 -t 120000 -l && pnpm run test:integration",
     "build": "tsc",

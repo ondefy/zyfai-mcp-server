@@ -17,7 +17,7 @@ export type McpToolCallAuth =
       message: string;
     };
 
-/** Scope required to call a tool. Undefined means the tool is public. */
+/** Scope required to call a tool. Undefined means public discovery only (PUBLIC_TOOLS). */
 export function requiredScopeForTool(toolName: string): string | undefined {
   if (PUBLIC_TOOLS.has(toolName)) {
     return undefined;
@@ -52,7 +52,7 @@ export function requiredScopeForTool(toolName: string): string | undefined {
   if (toolName === "withdraw") {
     return "mcp:tools:write:deposit";
   }
-  return undefined;
+  return "mcp:tools:read";
 }
 
 const WRITE_TOOL_SCOPES = [

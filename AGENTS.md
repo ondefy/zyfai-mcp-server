@@ -46,7 +46,8 @@ See `.env.example`. Required for live API calls:
 
 ```bash
 pnpm install
-pnpm run check    # tsc --noEmit + build — canonical validation
+pnpm run check    # tsc --noEmit + build + unit tests — canonical validation
+pnpm run test:unit
 pnpm run test:integration   # opt-in; .env.test + ZYFAI_ENV (not part of check)
 pnpm run build
 pnpm start        # production HTTP server (build/index.js)

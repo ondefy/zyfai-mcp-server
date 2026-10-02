@@ -57,6 +57,30 @@ describe("authorizeMcpToolCall", () => {
       }),
     ).toEqual({ ok: true });
   });
+
+  it("treats unlisted tool names as read-scoped (not public)", () => {
+    expect(
+      authorizeMcpToolCall("hypothetical_unlisted_tool", undefined),
+    ).toMatchObject({
+      ok: false,
+      status: 401,
+      error: "unauthorized",
+    });
+    expect(
+      authorizeMcpToolCall("hypothetical_unlisted_tool", {
+        scope: "mcp:tools:read",
+      }),
+    ).toEqual({ ok: true });
+    expect(
+      authorizeMcpToolCall("hypothetical_unlisted_tool", {
+        scope: "mcp:tools:write:deposit",
+      }),
+    ).toMatchObject({
+      ok: false,
+      status: 403,
+      error: "insufficient_scope",
+    });
+  });
 });
 
 describe("authorizeMcpRequestBody", () => {
