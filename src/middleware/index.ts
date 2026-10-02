@@ -37,3 +37,5 @@ export function notFoundHandler(req: Request, res: Response) {
     path: req.path,
   });
 }
+
+export { mcpAuthMiddleware } from "./mcp-auth.middleware.js";

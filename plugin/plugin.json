@@ -1,0 +1,15 @@
+{
+  "$schema": "https://agentplugins.io/schemas/plugin/v1/plugin.schema.json",
+  "name": "zyfai",
+  "version": "0.1.0",
+  "description": "Discover, monitor, and manage Zyfai DeFi positions through standards-based MCP.",
+  "extensions": {
+    "com.openai": {
+      "shortDescription": "Zyfai DeFi intelligence and delegated position management",
+      "longDescription": "Connect ChatGPT or other MCP hosts to Zyfai portfolio data, opportunities, and optional delegated enter/exit flows over OAuth.",
+      "privacyPolicyUrl": "https://zyf.ai/privacy",
+      "termsOfServiceUrl": "https://zyf.ai/terms",
+      "supportUrl": "https://zyf.ai/support"
+    }
+  }
+}

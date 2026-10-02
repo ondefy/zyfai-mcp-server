@@ -1,147 +1,91 @@
 /**
- * Historical Data Tools
+ * Session-scoped historical and position-adjacent reads.
  */
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import {
+  requireAuthForTool,
+  resolveSessionSmartWallet,
+} from "../auth/user-scope.js";
+import { chainIdSchema, CHAIN_ID_DESCRIPTION } from "../config/chains.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { toolError, toolJsonContent } from "./tool-response.js";
 
 export function registerUserDataTools(
   server: McpServer,
-  zyfiApi: ZyfaiApiService
+  zyfiApi: ZyfaiApiService,
 ) {
   server.tool(
-    "get-history",
-    "Get transaction history for a wallet",
+    "get_history",
+    "Transaction history for the authenticated user's smart wallet.",
     {
-      walletAddress: z.string().describe("The smart wallet address"),
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
-      limit: z
-        .number()
-        .optional()
-        .describe("Optional limit for number of results"),
-      offset: z.number().optional().describe("Optional offset for pagination"),
+      chainId: chainIdSchema.describe(CHAIN_ID_DESCRIPTION),
+      limit: z.number().optional().describe("Optional limit for results"),
+      offset: z.number().optional().describe("Optional pagination offset"),
       fromDate: z
         .string()
         .optional()
-        .describe("Optional start date in YYYY-MM-DD format"),
+        .describe("Optional start date (YYYY-MM-DD)"),
       toDate: z
         .string()
         .optional()
-        .describe("Optional end date in YYYY-MM-DD format"),
+        .describe("Optional end date (YYYY-MM-DD)"),
     },
-    async ({ walletAddress, chainId, limit, offset, fromDate, toDate }) => {
+    async ({ chainId, limit, offset, fromDate, toDate }) => {
       try {
-        const response = await zyfiApi.getHistory(walletAddress, chainId, {
+        requireAuthForTool();
+        const smartWallet = await resolveSessionSmartWallet(zyfiApi);
+        const response = await zyfiApi.getHistory(smartWallet, chainId, {
           limit,
           offset,
           fromDate,
           toDate,
         });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        return toolJsonContent(response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching history: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
       }
-    }
+    },
   );
 
   server.tool(
-    "get-first-topup",
-    "Get the first topup (deposit) information for a wallet",
+    "get_first_deposit",
+    "First deposit (top-up) for the authenticated user on a chain.",
     {
-      walletAddress: z.string().describe("The smart wallet address"),
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
+      chainId: chainIdSchema.describe(CHAIN_ID_DESCRIPTION),
     },
-    async ({ walletAddress, chainId }) => {
+    async ({ chainId }) => {
       try {
-        const response = await zyfiApi.getFirstTopup(walletAddress, chainId);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        requireAuthForTool();
+        const smartWallet = await resolveSessionSmartWallet(zyfiApi);
+        const response = await zyfiApi.getFirstTopup(smartWallet, chainId);
+        return toolJsonContent(response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching first topup: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
       }
-    }
+    },
   );
 
   server.tool(
-    "get-positions",
-    "Get all active DeFi positions and portfolio for a user's wallet address",
-    {
-      userAddress: z
-        .string()
-        .describe("The user's EOA address to get positions and portfolio for"),
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .optional()
-        .describe(
-          "Optional chain ID to filter positions and portfolio (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
-    },
-    async ({ userAddress, chainId }) => {
+    "get_rebalance_frequency",
+    "Rebalance tier and frequency for the authenticated user's smart wallet.",
+    {},
+    async () => {
       try {
-        const response = await zyfiApi.getPositions(userAddress, chainId);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(response, null, 2),
-            },
-          ],
-        };
+        requireAuthForTool();
+        const smartWallet = await resolveSessionSmartWallet(zyfiApi);
+        const response = await zyfiApi.getRebalanceFrequency(smartWallet);
+        return toolJsonContent(response);
       } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error fetching positions and portfolio: ${
-                error instanceof Error ? error.message : "Unknown error"
-              }`,
-            },
-          ],
-          isError: true,
-        };
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
       }
-    }
+    },
   );
 }

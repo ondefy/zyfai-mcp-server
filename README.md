@@ -1,135 +1,22 @@
 # Zyfai DeFi MCP Server
 
-A production-ready Model Context Protocol (MCP) server that exposes Zyfai DeFi APIs through 15 powerful tools. Built on top of the [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) and supports **Streamable HTTP** transport (MCP 2024-11-05+) with complete portfolio management, analytics, and DeFi opportunities discovery.
+Streamable HTTP [MCP](https://modelcontextprotocol.io) server over [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk). OAuth-scoped portfolio, earnings, and agent tools, plus protocol/opportunity discovery.
 
-You can make use of the official Zyfai mcp server deployed [here](https://mcp.zyf.ai) or run your own.
+**Production:** [https://mcp.zyf.ai/mcp](https://mcp.zyf.ai/mcp) · **Health:** `/health`
 
-## Features
+This repo is **not** [zyf-knowledge-mcp](https://github.com/ondefy/zyf-knowledge-mcp) (internal code search; workspace Cursor alias `zyfai-mcp`).
 
-- **15 MCP Tools** for complete DeFi workflow
-- **Portfolio Management** - Track positions across all chains
-- **Opportunities Discovery** - Find conservative and aggressive yield opportunities
-- **Analytics & Metrics** - TVL, volume, wallet analytics, and more
-- **Earnings Tracking** - Onchain earnings, daily earnings, APY history
-- **User Data** - Transaction history, positions, first topup info
-- **Multi-Chain Support** - Base (8453), Arbitrum (42161), Plasma (9745)
-- **Streamable HTTP transport** - Modern unified `/mcp` endpoint (MCP 2024-11-05+)
-- Session-based with `Mcp-Session-Id` header support
-- Express.js server with CORS support
-- Production-ready with PM2 process management
-- Comprehensive error handling & TypeScript
-- Built with [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp)
-- Powered by [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk)
+## Documentation map
 
-## Transport Update: SSE to Streamable HTTP
+| Audience | Start here |
+| --- | --- |
+| MCP users and integrators | [Zyfai MCP Server on docs.zyf.ai](https://docs.zyf.ai/docs/sdk/mcp-server) — endpoints, auth, tools, client setup |
+| Agents and LLM builders | [Agent Quickstart](https://docs.zyf.ai/docs/sdk/agent-quickstart) — execution via `@zyfai/sdk` |
+| Contributors in this repo | [`AGENTS.md`](AGENTS.md) — architecture, env, `pnpm run check`, review policy |
 
-This server has been updated from the deprecated SSE transport to **Streamable HTTP** (MCP specification 2024-11-05+):
+## Use the hosted server
 
-| Old (Deprecated)                              | New (Current)                               |
-| --------------------------------------------- | ------------------------------------------- |
-| `/sse` (GET) + `/messages` (POST)             | `/mcp` (unified endpoint)                   |
-| Separate endpoints for streaming and messages | Single endpoint handles all operations      |
-| Session managed via query params              | Session managed via `Mcp-Session-Id` header |
-
-### Benefits of Streamable HTTP
-
-- **Simpler architecture**: Single unified endpoint for all MCP operations
-- **Better infrastructure compatibility**: Works well with proxies, CDNs, and HTTP/2
-- **Enhanced resumability**: Better error handling and session recovery
-- **Stateless option**: Servers can operate statelessly if desired
-
-## Available Tools
-
-### Protocol (1 tool)
-
-- `get-available-protocols` - Get available DeFi protocols and pools for a specific chain on Zyfai
-
-### Opportunities Discovery (2 tools)
-
-- `get-conservative-opportunities` - Get safe (low risk) DeFi opportunities suitable for conservative investors
-- `get-aggressive-opportunities` - Get degen (high-risk, high-reward) yield strategies for aggressive investors
-
-### Analytics & Metrics (6 tools)
-
-- `get-tvl` - Get total value locked (TVL) across all Zyfai accounts
-- `get-volume` - Get total volume across all Zyfai accounts
-- `get-active-wallets` - Get active wallets for a specific chain on Zyfai
-- `get-smart-wallet-by-eoa` - Get smart wallets associated with an EOA address
-- `get-rebalance-frequency` - Get rebalance frequency/tier for a wallet
-- `get-apy-per-strategy` - Get APY per strategy for a specific chain
-
-### User Data (3 tools)
-
-- `get-positions` - Get all active DeFi positions and portfolio for a user's wallet address
-- `get-history` - Get transaction history for a wallet with pagination
-- `get-first-topup` - Get the first topup (deposit) information for a wallet
-
-### Earnings (3 tools)
-
-- `get-onchain-earnings` - Get onchain earnings for a wallet including total, current, and lifetime earnings
-- `get-daily-earnings` - Get daily earnings for a wallet within a date range
-- `get-daily-apy-history` - Get daily APY history for a wallet
-
-## Project Structure
-
-```
-zyfai-mcp-server/
-├── index.ts                              # Main Streamable HTTP server entry point
-├── index-stdio.ts                        # STDIO server for Claude Desktop
-├── proxy-server.ts                       # Proxy for remote Streamable HTTP server
-├── src/
-│   ├── config/
-│   │   └── env.ts                        # Environment configuration
-│   ├── services/
-│   │   └── zyfai-api.service.ts          # Zyfai SDK wrapper service
-│   ├── tools/
-│   │   ├── index.ts                      # Tool registration
-│   │   ├── protocol.tools.ts             # Protocol tools (1 tool)
-│   │   ├── opportunities.tools.ts        # Opportunities tools (2 tools)
-│   │   ├── analytics.tools.ts            # Analytics tools (6 tools)
-│   │   ├── user-data.tools.ts            # User data tools (3 tools)
-│   │   └── earnings.tools.ts             # Earnings tools (3 tools)
-│   ├── routes/
-│   │   └── http.routes.ts                # Streamable HTTP routes
-│   └── middleware/
-│       └── index.ts                      # Middleware (logger, error handler)
-├── package.json                          # Project dependencies
-├── tsconfig.json                         # TypeScript configuration
-├── ecosystem.config.cjs                  # PM2 configuration
-├── Dockerfile                            # Docker configuration
-├── setup-domain.sh                       # Domain setup script
-└── build/                                # Compiled JavaScript output
-```
-
-## Client Integration
-
-### Using with Claude Code
-
-If you'd like to add zyfai mcp server under your claude code, execute the below in a separate terminal, not under a claude code session:
-
-```bash
-# Using Streamable HTTP transport (recommended)
-claude mcp add --transport http zyfai-agent https://mcp.zyf.ai/mcp
-```
-
-### Using with Claude Desktop
-
-For **remote Streamable HTTP server**:
-
-```json
-{
-  "mcpServers": {
-    "zyfai-defi": {
-      "command": "npx",
-      "args": ["mcp-remote", "https://mcp.zyf.ai/mcp"]
-    }
-  }
-}
-```
-
-### Using with Cursor
-
-Add to your Cursor MCP settings:
+Point any Streamable HTTP MCP client at `https://mcp.zyf.ai/mcp`. Cursor example:
 
 ```json
 {
@@ -142,423 +29,52 @@ Add to your Cursor MCP settings:
 }
 ```
 
-### Using with Cursor / Other MCP Clients
+More clients (Claude Code, Desktop, TypeScript): see [docs.zyf.ai](https://docs.zyf.ai/docs/sdk/mcp-server#client-setup).
 
-The server uses Streamable HTTP transport, making it accessible from web browsers and HTTP clients:
+## Run locally
 
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-
-// Initialize MCP client with Streamable HTTP transport
-const transport = new StreamableHTTPClientTransport(
-  new URL("https://mcp.zyf.ai/mcp")
-);
-
-const client = new Client(
-  { name: "my-app", version: "1.0.0" },
-  { capabilities: {} }
-);
-
-await client.connect(transport);
-
-// List available tools
-const tools = await client.listTools();
-console.log(
-  "Available tools:",
-  tools.tools.map((t) => t.name)
-);
-
-// Call a tool
-const result = await client.callTool({
-  name: "get-conservative-opportunities",
-  arguments: { chainId: 8453 },
-});
-```
-
-https://mcp.zyf.ai/mcp
-
-### Testing with MCP Inspector
-
-You can test the server using the official MCP Inspector:
-
-```bash
-npx @modelcontextprotocol/inspector
-```
-
-Then enter the endpoint URL: `https://mcp.zyf.ai/mcp`
-
-### Building LLM-Powered DeFi Apps with Zyfai MCP
-
-For developers building **AI-powered DeFi agents** that can autonomously discover yield opportunities, analyze portfolios, and provide intelligent recommendations, here's how to integrate the Zyfai MCP server with your LLM application.
-
-**Installation:**
-
-```bash
-# For Anthropic Claude
-npm install @modelcontextprotocol/sdk @anthropic-ai/sdk
-
-# For OpenAI GPT
-npm install @modelcontextprotocol/sdk openai
-
-# Or use pnpm
-pnpm add @modelcontextprotocol/sdk openai
-```
-
-**Complete Example - AI DeFi Yield Optimizer:**
-
-This example shows how to build an LLM agent that uses Zyfai MCP server to create an intelligent DeFi assistant. Choose between OpenAI or Anthropic based on your preference.
-
-```typescript
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import OpenAI from "openai";
-
-/**
- * Initialize Zyfai MCP Client with Streamable HTTP
- */
-async function initializeZyfaiMCP() {
-  const transport = new StreamableHTTPClientTransport(
-    new URL("https://mcp.zyf.ai/mcp")
-  );
-
-  const client = new Client(
-    {
-      name: "defi-ai-agent",
-      version: "1.0.0",
-    },
-    {
-      capabilities: {},
-    }
-  );
-
-  await client.connect(transport);
-  console.log("Connected to Zyfai MCP Server (Streamable HTTP)");
-
-  return client;
-}
-
-/**
- * DeFi AI Agent with OpenAI - Combines LLM reasoning with Zyfai MCP tools
- */
-class DeFiAIAgent {
-  private zyfaiClient: Client;
-  private openai: OpenAI;
-  private availableTools: any[];
-
-  constructor(zyfaiClient: Client, openaiApiKey: string) {
-    this.zyfaiClient = zyfaiClient;
-    this.openai = new OpenAI({ apiKey: openaiApiKey });
-    this.availableTools = [];
-  }
-
-  /**
-   * Initialize agent by discovering available Zyfai tools
-   */
-  async initialize() {
-    const toolsResponse = await this.zyfaiClient.listTools();
-
-    // Convert MCP tool schema to OpenAI function calling format
-    this.availableTools = toolsResponse.tools.map((tool) => ({
-      type: "function",
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.inputSchema,
-      },
-    }));
-
-    console.log(
-      `Agent initialized with ${this.availableTools.length} Zyfai tools`
-    );
-  }
-
-  /**
-   * Execute a tool call via Zyfai MCP
-   */
-  async executeTool(toolName: string, toolInput: any) {
-    console.log(`Executing: ${toolName}`, toolInput);
-
-    const result = await this.zyfaiClient.callTool({
-      name: toolName,
-      arguments: toolInput,
-    });
-
-    // Extract text content from MCP response
-    const content = result.content
-      .filter((item: any) => item.type === "text")
-      .map((item: any) => item.text)
-      .join("\n");
-
-    return content;
-  }
-
-  /**
-   * Chat with the AI agent - it can use Zyfai tools automatically
-   */
-  async chat(userMessage: string, conversationHistory: any[] = []) {
-    const messages = [
-      ...conversationHistory,
-      {
-        role: "user",
-        content: userMessage,
-      },
-    ];
-
-    let response = await this.openai.chat.completions.create({
-      model: "gpt-4o", // or "gpt-4-turbo", "gpt-3.5-turbo"
-      messages: messages,
-      tools: this.availableTools,
-      tool_choice: "auto",
-    });
-
-    let message = response.choices[0].message;
-    console.log(`Response finish reason: ${response.choices[0].finish_reason}`);
-
-    // Handle tool calls iteratively
-    while (message.tool_calls && message.tool_calls.length > 0) {
-      // Add assistant's response to conversation
-      messages.push(message);
-
-      // Execute each tool call
-      for (const toolCall of message.tool_calls) {
-        const toolName = toolCall.function.name;
-        const toolArgs = JSON.parse(toolCall.function.arguments);
-
-        // Execute the tool via Zyfai MCP
-        const toolResult = await this.executeTool(toolName, toolArgs);
-
-        // Add tool result to conversation
-        messages.push({
-          role: "tool",
-          tool_call_id: toolCall.id,
-          content: toolResult,
-        });
-      }
-
-      // Get next response from OpenAI
-      response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: messages,
-        tools: this.availableTools,
-        tool_choice: "auto",
-      });
-
-      message = response.choices[0].message;
-      console.log(
-        `Continued finish reason: ${response.choices[0].finish_reason}`
-      );
-    }
-
-    // Extract final text response
-    const finalResponse = message.content || "";
-
-    return {
-      response: finalResponse,
-      conversationHistory: [...messages, message],
-    };
-  }
-}
-
-/**
- * Example Usage: AI-Powered DeFi Scenarios
- */
-async function runDeFiAgent() {
-  // Initialize Zyfai MCP client
-  const zyfaiClient = await initializeZyfaiMCP();
-
-  // Create AI agent with Zyfai tools (using OpenAI)
-  const agent = new DeFiAIAgent(zyfaiClient, process.env.OPENAI_API_KEY!);
-  await agent.initialize();
-
-  // Scenario 1: Find best yield opportunities
-  console.log("\nScenario 1: Finding best yields\n");
-  const result1 = await agent.chat(
-    "I have $10,000 USDC on Base chain. Find me the safest yield opportunities with at least 4% APY. Compare the top 3 options and recommend the best one considering TVL and historical performance."
-  );
-  console.log("Agent:", result1.response);
-
-  // Scenario 2: Portfolio analysis with multi-chain context
-  console.log("\nScenario 2: Portfolio Analysis\n");
-  const result2 = await agent.chat(
-    "Analyze the portfolio for wallet 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb across Base and Arbitrum. Calculate total earnings, identify underperforming positions, and suggest rebalancing strategies.",
-    result1.conversationHistory
-  );
-  console.log("Agent:", result2.response);
-}
-
-// Run examples
-console.log("Starting AI DeFi Agent Examples...\n");
-
-runDeFiAgent()
-  .then(() => {
-    console.log("\nAll scenarios completed!");
-  })
-  .catch((error) => {
-    console.error("Error:", error);
-  });
-```
-
-**Example Conversation:**
-
-```
-User: "I have 5000 USDC on Base. What's my best option?"
-
-Agent: *Calls get-conservative-opportunities tool*
-       *Calls get-available-protocols tool*
-       *Analyzes results*
-
-Agent: "Based on current data, I recommend Aave V3 on Base:
-       - APY: 4.8% (stable over 30 days)
-       - TVL: $45M (high liquidity)
-       - Risk: Low (audited, established protocol)
-       - Expected monthly return: ~$20
-
-       Alternative: Compound offers 4.2% APY if you prefer even
-       more battle-tested protocols."
-
-User: "How has Aave performed historically?"
-
-Agent: *Calls get-daily-apy-history tool*
-       *Calls get-apy-per-strategy tool*
-
-Agent: "Aave on Base has shown consistent performance:
-       - 30-day average APY: 4.6%
-       - Lowest: 4.1%, Highest: 5.2%
-       - Trend: Stable with slight upward movement
-       - Active wallets: 2,847 (growing ecosystem)
-
-       This is a solid choice for stable, predictable yields."
-```
-
-For more advanced integrations, combine with direct [@zyfai/sdk](https://sdk.zyf.ai/) integration for transaction execution
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js >= 18.0.0
-- pnpm (or npm)
-- Zyfai API Key (optional, for authenticated endpoints)
-
-### Local Development
-
-1. Clone the repository:
+**Requirements:** Node.js 18+, pnpm.
 
 ```bash
 git clone https://github.com/ondefy/zyfai-mcp-server
 cd zyfai-mcp-server
-```
-
-2. Install dependencies:
-
-```bash
+cp .env.example .env   # set ZYFAI_API_KEY (https://sdk.zyf.ai/)
 pnpm install
-```
-
-3. Create environment file (optional):
-
-```bash
-# Create .env file
-cat > .env <<EOF
-PORT=3005
-HOST=0.0.0.0
-ALLOWED_ORIGINS=*
-ZYFAI_API_KEY=your_api_key_here
-EOF
-```
-
-4. Configure environment variables:
-
-Get your ZYFAI_API_KEY from [Zyfai SDK Dashboard](https://sdk.zyf.ai/)
-
-**Note:** The server will start without an API key (shows a warning), but API calls will fail. Set `ZYFAI_API_KEY` in your `.env` file for full functionality.
-
-5. Build the project:
-
-```bash
-pnpm run build
-```
-
-6. Start the server:
-
-```bash
+pnpm run check
 pnpm start
 ```
 
-The server will be running at:
+- MCP: `http://localhost:3005/mcp`
+- Default port `3005` (`PORT` in `.env`)
 
-- Main endpoint: `http://localhost:3005/`
-- MCP endpoint: `http://localhost:3005/mcp`
-- Health check: `http://localhost:3005/health`
+For workspace-linked SDK dev (`dev:watch`, `ZYFAI_BACKEND_ENV=local`), see [`AGENTS.md`](AGENTS.md#commands).
 
-### Development Mode
+## Configuration
 
-```bash
-pnpm run dev
-```
+Copy [`.env.example`](.env.example). Common variables:
 
-This will build and start the server in development mode.
+| Variable | Purpose |
+| --- | --- |
+| `ZYFAI_API_KEY` | Partner SDK key (required for live API calls) |
+| `MCP_AUTH_REQUIRED` | `true` in production: every `/mcp` request needs a bearer. `false`: missing bearer is anonymous (discovery tools only). A supplied bearer is validated in both modes. Protected tools without a session return `401` |
+| `PORT` / `HOST` / `ALLOWED_ORIGINS` | HTTP server |
 
-## Environment Variables
+Full list and backend URL overrides: `.env.example` and [`AGENTS.md`](AGENTS.md#environment).
 
-Configure your server using environment variables:
+## Scripts
 
-| Variable          | Description                            | Default   | Required            |
-| ----------------- | -------------------------------------- | --------- | ------------------- |
-| `PORT`            | Server port                            | `3005`    | No                  |
-| `HOST`            | Host to bind to                        | `0.0.0.0` | No                  |
-| `ZYFAI_API_KEY`   | Zyfai SDK API key                      | -         | Yes (for API calls) |
-| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `*`       | No                  |
+| Command | Purpose |
+| --- | --- |
+| `pnpm run check` | Canonical validation (typecheck + build) |
+| `pnpm run test:integration` | Opt-in end-to-end MCP tests (`env.test.example` → `.env.test`; see `AGENTS.md`) |
+| `pnpm start` | HTTP server (`build/index.js`) |
+| `pnpm run dev` | Build and start once |
 
-## Available Scripts
+## Related
 
-- `pnpm run build` - Compile TypeScript to JavaScript
-- `pnpm start` - Start the production Streamable HTTP server (`build/index.js`)
-- `pnpm run start:stdio` - Start the STDIO server for Claude Desktop (`build/index-stdio.js`)
-- `pnpm run dev` - Build and start in development mode
-- `pnpm run clean` - Clean build directory
-
-**Note:** The project includes:
-
-- `index.ts` - Streamable HTTP server for web/remote access
-- `index-stdio.ts` - STDIO server for Claude Desktop (local)
-- `proxy-server.ts` - Proxy server bridging stdio to remote Streamable HTTP
-
-## Migration from SSE (Legacy)
-
-If you're upgrading from a previous version using SSE transport:
-
-1. Update `@modelcontextprotocol/sdk` to `^1.12.0` or later
-2. Change client transport from `SSEClientTransport` to `StreamableHTTPClientTransport`
-3. Update endpoint URLs from `/sse` to `/mcp`
-4. Add `Mcp-Session-Id` header handling (automatically managed by the SDK)
-
-**Before (SSE):**
-
-```typescript
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-const transport = new SSEClientTransport(new URL("https://mcp.zyf.ai/sse"));
-```
-
-**After (Streamable HTTP):**
-
-```typescript
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-const transport = new StreamableHTTPClientTransport(
-  new URL("https://mcp.zyf.ai/mcp")
-);
-```
-
-## Contributing
-
-Feel free to submit issues and enhancement requests!
+- [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk)
+- [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk)
 
 ## License
 
 ISC
-
-## Related Projects
-
-- [@zyfai/sdk](https://www.npmjs.com/package/@zyfai/sdk) - Zyfai TypeScript SDK
-- [@modelcontextprotocol/sdk](https://docs.anthropic.com/en/docs/agents-and-tools/mcp) - Model Context Protocol SDK

@@ -3,108 +3,40 @@
  * Main entry point - Modular architecture
  */
 
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import express from "express";
-import cors from "cors";
+import { assertProductionMcpConfig, config } from "./src/config/env.js";
+import { createApp } from "./src/create-app.js";
 
-// Configuration
-import { config } from "./src/config/env.js";
+assertProductionMcpConfig();
 
-// Services
-import { ZyfaiApiService } from "./src/services/zyfai-api.service.js";
-
-// Tools
-import { registerAllTools } from "./src/tools/index.js";
-
-// Routes
-import { setupRoutes } from "./src/routes/http.routes.js";
-
-// Middleware
-import {
-  requestLogger,
-  errorHandler,
-  notFoundHandler,
-} from "./src/middleware/index.js";
-
-// ============================================================================
-// Initialize Services
-// ============================================================================
-
-const zyfiApi = new ZyfaiApiService();
-
-// ============================================================================
-// Create Express App
-// ============================================================================
-
-const app = express();
-
-// Middleware
-app.use(express.json());
-
-// CORS configuration
-app.use(
-  cors({
-    origin: config.allowedOrigins,
-    credentials: true,
-    exposedHeaders: ["Mcp-Session-Id"],
-  })
-);
-
-app.use(requestLogger);
-
-// ============================================================================
-// Create MCP Server & Register Tools
-// ============================================================================
-
-const server = new McpServer({
-  name: "zyfai-defi-mcp",
-  version: "1.0.0",
-});
-
-// Register all MCP tools
-registerAllTools(server, zyfiApi);
-
-// ============================================================================
-// Setup Routes
-// ============================================================================
-
-app.use(setupRoutes(server));
-
-// ============================================================================
-// Error Handlers
-// ============================================================================
-
-app.use(errorHandler);
-app.use(notFoundHandler);
-
-// ============================================================================
-// Server Initialization
-// ============================================================================
+const { app } = createApp();
 
 async function main() {
   try {
-    // Start Express server
     app.listen(config.port, config.host, () => {
       console.log(`\n${"=".repeat(60)}`);
       console.log(`  🚀 Zyfai DeFi MCP Server v1.0.0`);
       console.log(`${"=".repeat(60)}`);
       console.log(
-        `\n📡 Server running on http://${config.host}:${config.port}`
+        `\n📡 Server running on http://${config.host}:${config.port}`,
       );
       console.log(`   MCP endpoint: http://${config.host}:${config.port}/mcp`);
       console.log(
-        `   Health check: http://${config.host}:${config.port}/health`
+        `   Health check: http://${config.host}:${config.port}/health`,
       );
       console.log(`\n📦 Transport: Streamable HTTP (MCP 2024-11-05+)`);
       console.log(`   - Unified /mcp endpoint for all operations`);
       console.log(`   - Session-based with Mcp-Session-Id header`);
       console.log(`   - Supports streaming responses`);
-      console.log(`\n🔧 Available MCP Tools: 15`);
-      console.log(`   - Protocol: 1 tool`);
-      console.log(`   - Opportunities: 2 tools`);
-      console.log(`   - Analytics: 6 tools`);
-      console.log(`   - User Data: 3 tools`);
-      console.log(`   - Earnings: 3 tools`);
+      console.log(
+        `\n🔧 MCP auth required: ${config.mcpAuthRequired} (bearer validated when present)`,
+      );
+      console.log(
+        `   Tools: agent (account, portfolio, deposits, settings),`,
+      );
+      console.log(
+        `   session reads (history, earnings, rebalance tier),`,
+      );
+      console.log(`   discovery (find_opportunities, get-available-protocols)`);
       console.log(`\n📚 Zyfai SDK: @zyfai/sdk`);
       console.log(`${"=".repeat(60)}\n`);
     });
@@ -113,10 +45,6 @@ async function main() {
     process.exit(1);
   }
 }
-
-// ============================================================================
-// Graceful Shutdown
-// ============================================================================
 
 process.on("SIGTERM", () => {
   console.log("SIGTERM received, shutting down gracefully...");
@@ -127,10 +55,6 @@ process.on("SIGINT", () => {
   console.log("SIGINT received, shutting down gracefully...");
   process.exit(0);
 });
-
-// ============================================================================
-// Start Server
-// ============================================================================
 
 main().catch((error) => {
   console.error("Fatal error in main():", error);

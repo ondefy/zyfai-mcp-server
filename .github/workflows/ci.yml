@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: zyfai-mcp-server
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: zyfai-mcp-server
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+          package_json_file: zyfai-mcp-server/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: zyfai-mcp-server/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - run: pnpm run check

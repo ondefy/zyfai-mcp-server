@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agentplugins.io/schemas/plugin/v1/mcp.schema.json",
+  "mcpServers": {
+    "zyfai": {
+      "type": "http",
+      "url": "https://mcp.zyf.ai/mcp"
+    }
+  }
+}

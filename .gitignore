@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-pnpm-lock.yaml
 package-lock.json
 yarn.lock
 
@@ -8,11 +7,16 @@ yarn.lock
 build/
 dist/
 
+# Local workspace SDK override (see pnpm-workspace.example.yaml)
+pnpm-workspace.yaml
+
 # Environment variables
 .env
 .env.local
 .env.production
 .env.development
+.env.test
+.env.test.local
 
 # Logs
 logs/

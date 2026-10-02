@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { chainIdSchema, CHAIN_ID_DESCRIPTION } from "../config/chains.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 
 export function registerProtocolTools(
@@ -14,11 +15,7 @@ export function registerProtocolTools(
     "get-available-protocols",
     "Get available DeFi protocols and pools for a specific chain on Zyfai",
     {
-      chainId: z
-        .union([z.literal(8453), z.literal(42161), z.literal(9745)])
-        .describe(
-          "Chain ID (8453 for Base, 42161 for Arbitrum, 9745 for Plasma)"
-        ),
+      chainId: chainIdSchema.describe(CHAIN_ID_DESCRIPTION),
     },
     async ({ chainId }) => {
       try {

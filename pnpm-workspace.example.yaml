@@ -1,0 +1,4 @@
+# Copy to pnpm-workspace.yaml (gitignored) for local workspace @zyfai/sdk.
+# From zyfai-workspace root: pnpm dev:zyfai-mcp:link
+overrides:
+  '@zyfai/sdk': link:../zyfai-sdk
