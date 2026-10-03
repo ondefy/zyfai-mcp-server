@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.ondefy/zyfai",
+  "title": "Zyfai",
+  "description": "Discover DeFi yield opportunities and manage Zyfai positions with self-custodial AI agents.",
+  "version": "1.0.0",
+  "websiteUrl": "https://docs.zyf.ai/docs/sdk/mcp-server",
+  "repository": {
+    "url": "https://github.com/ondefy/zyfai-mcp-server",
+    "source": "github",
+    "id": "1089278808"
+  },
+  "icons": [
+    {
+      "src": "https://zyf.ai/zyfai-icon-loading.webp",
+      "mimeType": "image/webp"
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.zyf.ai/mcp"
+    }
+  ]
+}
