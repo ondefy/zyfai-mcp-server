@@ -246,7 +246,7 @@ export function registerAgentTools(
 
   server.tool(
     "wait_for_deposit_handover",
-    "Block until the user finishes prepare_deposit signing (intent completed) and optionally until custody credit. Call in the same turn as prepare_deposit, right after you share signingUrl, so listening starts during the browser handoff.",
+    "Monitor an in-flight deposit after prepare_deposit. Block until the user finishes prepare_deposit signing (intent completed) and optionally until custody credit. Call in the same turn as prepare_deposit, right after you share signingUrl, so listening starts during the browser handoff.",
     {
       actionId: z.string().describe("actionId from prepare_deposit"),
       chainId: executionChainIdSchema,
