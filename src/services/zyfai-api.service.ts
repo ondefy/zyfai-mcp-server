@@ -197,6 +197,18 @@ export class ZyfaiApiService {
     return sdk.waitForDepositCredit(depositId, chainId);
   }
 
+  async waitForAgentDepositHandover(
+    actionId: string,
+    chainId: SupportedChainId,
+    options?: {
+      waitForCredit?: boolean;
+      timeoutMs?: number;
+    },
+  ) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.waitForAgentDepositHandover(actionId, chainId, options);
+  }
+
   async getAssetTypeSettings() {
     const sdk = await this.sdkForUserScoped();
     return sdk.getAssetTypeSettings();
