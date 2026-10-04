@@ -6,6 +6,8 @@ This public [Model Context Protocol](https://modelcontextprotocol.io) server exp
 
 > **Hosted MCP endpoint:** `https://mcp.zyf.ai/mcp`
 
+Paste this into an agent: “Connect to https://zyf.ai/skill.md”. Then follow the steps. The full client guide is [Use Zyfai with AI](https://docs.zyf.ai/docs/sdk/mcp-server).
+
 You do not need to clone or run this repository to use the hosted server.
 
 ## What you can do
@@ -102,7 +104,7 @@ OAuth challenges are returned through standard HTTP `401` and `WWW-Authenticate`
 
 | Audience | Start here |
 | --- | --- |
-| AI assistant users | [Use Zyfai with AI](https://docs.zyf.ai/docs/sdk/mcp-server) |
+| AI assistant users | [zyf.ai/skill.md](https://zyf.ai/skill.md), then [Use Zyfai with AI](https://docs.zyf.ai/docs/sdk/mcp-server) |
 | Application and agent developers | [Zyfai SDK quickstart](https://docs.zyf.ai/docs/sdk/getting-started) |
 | SDK-based autonomous agents | [Agent quickstart](https://docs.zyf.ai/docs/sdk/agent-quickstart) |
 | MCP server contributors | [`AGENTS.md`](AGENTS.md) |
