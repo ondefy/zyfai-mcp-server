@@ -8,6 +8,7 @@ import { config as loadDotenv } from "dotenv";
 loadDotenv();
 
 import type { BackendEnvironment } from "@zyfai/sdk";
+import { normalizeOriginUrl } from "./normalize-origin-url.js";
 import { normalizeZyfaiWebSigningBase } from "./normalize-signing-base.js";
 
 function parseBackendEnvironment(): BackendEnvironment | undefined {
@@ -27,12 +28,12 @@ export const config = {
   allowedOrigins: process.env.ALLOWED_ORIGINS?.split(",") || ["*"],
 
   // Zyfai API configuration
-  zyfiApiKey: process.env.ZYFAI_API_KEY,
+  zyfiApiKey: process.env.ZYFAI_API_KEY?.trim(),
 
   /** local | staging | production — maps to SDK base URLs when explicit URLs are unset. */
   backendEnvironment: parseBackendEnvironment(),
-  executionApiUrl: process.env.ZYFAI_EXECUTION_API_URL?.replace(/\/$/, ""),
-  dataApiUrl: process.env.ZYFAI_DATA_API_URL?.replace(/\/$/, ""),
+  executionApiUrl: normalizeOriginUrl(process.env.ZYFAI_EXECUTION_API_URL),
+  dataApiUrl: normalizeOriginUrl(process.env.ZYFAI_DATA_API_URL),
 
   /**
    * When true, every /mcp request needs a bearer.
@@ -43,17 +44,17 @@ export const config = {
     process.env.MCP_AUTH_REQUIRED === "true",
 
   mcpResourceUrl:
-    process.env.MCP_RESOURCE_URL?.replace(/\/$/, "") ||
-    "https://mcp.zyf.ai",
+    normalizeOriginUrl(process.env.MCP_RESOURCE_URL) || "https://mcp.zyf.ai",
 
   mcpOAuthJwtSecret:
-    process.env.MCP_OAUTH_JWT_SECRET || process.env.AUTH_JWT_SECRET,
+    process.env.MCP_OAUTH_JWT_SECRET?.trim() ||
+    process.env.AUTH_JWT_SECRET?.trim(),
 
-  mcpServerExchangeSecret: process.env.MCP_SERVER_EXCHANGE_SECRET,
+  mcpServerExchangeSecret: process.env.MCP_SERVER_EXCHANGE_SECRET?.trim(),
 
   mcpAuthorizationServer:
-    process.env.MCP_OAUTH_ISSUER?.replace(/\/$/, "") ||
-    process.env.API_PUBLIC_URL?.replace(/\/$/, "") ||
+    normalizeOriginUrl(process.env.MCP_OAUTH_ISSUER) ||
+    normalizeOriginUrl(process.env.API_PUBLIC_URL) ||
     "https://api.zyf.ai",
 
   /** zyf.ai origin for agent deposit signing pages (prepare_deposit signingUrl). */

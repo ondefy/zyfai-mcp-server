@@ -10,9 +10,10 @@
 # `pm2 restart --update-env` copies this process environment onto the app and
 # overwrites matching keys. The server also loads .env, but dotenv does not
 # override variables that are already set. This script restarts PM2 with a
-# clean environment: PATH, HOME, PM2_HOME, and the assignments in .env. Keys
-# that exist only on the running process are left in place. .env wins where
-# both are set. `pm2 save` writes that back so a reboot does not drop it.
+# clean environment: PATH, HOME, PM2_HOME, and the assignments in .env (values
+# are trimmed when parsed). Keys that exist only on the running process are
+# left in place. .env wins where both are set. `pm2 save` writes that back so
+# a reboot does not drop it. Runtime code also trims URL env vars (see env.ts).
 #
 # Nginx for mcp.zyf.ai is not changed.
 
@@ -72,6 +73,8 @@ write_env_file() {
     elif [[ ${#value} -ge 2 && "$value" == \'*\' && "$value" == *\' ]]; then
       value="${value:1:$((${#value} - 2))}"
     fi
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
     printf '%s=%q\n' "$key" "$value" >> "$dest"
   done < "$src"
 }

@@ -1,5 +1,6 @@
 import { getExecutionApiBaseUrl } from "@zyfai/sdk";
 import { config } from "../config/env.js";
+import { normalizeOriginUrl } from "../config/normalize-origin-url.js";
 
 export async function exchangeMcpSessionCredential(
   mcpAccessToken: string,
@@ -8,12 +9,16 @@ export async function exchangeMcpSessionCredential(
   if (!secret) {
     throw new Error("MCP_SERVER_EXCHANGE_SECRET is not configured");
   }
-  const executionBase =
+  const executionBase = normalizeOriginUrl(
     config.executionApiUrl ??
-    (config.backendEnvironment
-      ? getExecutionApiBaseUrl(config.backendEnvironment)
-      : "https://api.zyf.ai");
-  const url = `${executionBase.replace(/\/$/, "")}/api/v1/oauth/session-credential`;
+      (config.backendEnvironment
+        ? getExecutionApiBaseUrl(config.backendEnvironment)
+        : "https://api.zyf.ai"),
+  );
+  if (!executionBase) {
+    throw new Error("Execution API base URL is not configured");
+  }
+  const url = `${executionBase}/api/v1/oauth/session-credential`;
   const response = await fetch(url, {
     method: "POST",
     headers: {
