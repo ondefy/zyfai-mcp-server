@@ -55,11 +55,7 @@ claude mcp add --transport http zyfai https://mcp.zyf.ai/mcp
 
 ### Claude
 
-In Claude, open **Settings → Connectors**, add a custom connector, and use:
-
-```text
-https://mcp.zyf.ai/mcp
-```
+In Claude, open **Customize → Connectors**, add a custom connector named **Zyfai**, and set the remote MCP URL to `https://mcp.zyf.ai/mcp`. Select **Continue**, then sign in. Full click-path: [Use Zyfai with AI](https://docs.zyf.ai/docs/sdk/mcp-server).
 
 ### Grok and Grok Bot
 
