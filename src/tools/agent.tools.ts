@@ -15,6 +15,7 @@ import {
   CHAIN_ID_DESCRIPTION,
 } from "../config/chains.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
+import { waitForDepositHandover } from "../services/wait-for-deposit-handover.js";
 import { buildOpportunityId } from "./opportunity-id.js";
 import { READ_TOOL_ANNOTATIONS } from "./tool-annotations.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
@@ -235,6 +236,40 @@ export function registerAgentTools(
         requireReadScope();
         const settings = await zyfiApi.getAssetTypeSettings();
         return toolJsonContent(settings, "Zyfai settings");
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "wait_for_deposit_handover",
+    "Block until the user finishes prepare_deposit signing (intent completed) and optionally until custody credit. Call in the same turn as prepare_deposit, right after you share signingUrl, so listening starts during the browser handoff.",
+    {
+      actionId: z.string().describe("actionId from prepare_deposit"),
+      chainId: executionChainIdSchema,
+      waitForCredit: z.boolean().optional().default(true),
+      timeoutMs: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe("Max wait in ms (default matches intent TTL, 30 minutes)"),
+    },
+    READ_TOOL_ANNOTATIONS,
+    async ({ actionId, chainId, waitForCredit, timeoutMs }) => {
+      try {
+        requireAuthForTool();
+        requireReadScope();
+        const result = await waitForDepositHandover(zyfiApi, {
+          actionId,
+          chainId,
+          waitForCredit,
+          timeoutMs,
+        });
+        return toolJsonContent(result, "Deposit handover complete");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

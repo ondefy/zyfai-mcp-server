@@ -29,6 +29,7 @@ export function requiredScopeForTool(toolName: string): string | undefined {
     "preview_action",
     "get_settings",
     "get_deposit_status",
+    "wait_for_deposit_handover",
     "get_earnings",
     "get_daily_earnings",
     "get_apy_history",

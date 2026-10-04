@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { runPrepareDeposit } from "./prepare-deposit.js";
+import { runPrepareDeposit, runPrepareDepositWithHandover } from "./prepare-deposit.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
 
 describe("runPrepareDeposit", () => {
@@ -44,5 +44,36 @@ describe("runPrepareDeposit", () => {
       asset: "USDC",
     });
     expect(result.actionId).toBe("act-1");
+  });
+
+  it("starts handover listening as soon as prepare finishes", async () => {
+    const waitForAgentDepositHandover = vi.fn().mockResolvedValue({
+      intent: { status: "completed" },
+    });
+    const zyfiApi = {
+      prepareDeposit: vi.fn().mockResolvedValue({
+        phase: "prepare_transfer",
+        setup: { applied: false },
+        transfer: {},
+      }),
+      createAgentDepositIntent: vi.fn().mockResolvedValue({
+        data: { actionId: "act-2", signingTicket: "ticket-2" },
+      }),
+      waitForAgentDepositHandover,
+    } as unknown as ZyfaiApiService;
+
+    const { actionId, handover } = await runPrepareDepositWithHandover(
+      zyfiApi,
+      baseParams,
+    );
+
+    expect(actionId).toBe("act-2");
+    expect(waitForAgentDepositHandover).toHaveBeenCalledWith("act-2", 8453, {
+      waitForCredit: true,
+      timeoutMs: undefined,
+    });
+    await expect(handover).resolves.toMatchObject({
+      intent: { status: "completed" },
+    });
   });
 });
