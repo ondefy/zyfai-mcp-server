@@ -100,7 +100,17 @@ MCP_INTEGRATION_BASE_URL=http://127.0.0.1:3005 pnpm run test:integration
 
 `applyIntegrationServerEnv()` maps `ZYFAI_ENV` → `ZYFAI_BACKEND_ENV` and applies the local data-api default when unset. Helpers: `src/integration/utils.ts` only.
 
-Docker: `pnpm-lock.yaml` + `Dockerfile` (default `PORT=3005`). PM2: `ecosystem.config.cjs`.
+Docker: `pnpm-lock.yaml` + `Dockerfile` (default `PORT=3005`).
+
+### Production release
+
+On the MCP host, from `/apps/zyfai-mcp-server`:
+
+```bash
+pnpm run release
+```
+
+[`scripts/release.sh`](scripts/release.sh) pulls `main` as `deploy` (GitHub SSH key), then `pnpm install --frozen-lockfile` and `pnpm run build` as the current user (`sudo -u deploy pnpm` is not on the sudoers whitelist). It restarts PM2 app `zyfai-mcp-server` with `PM2_HOME=/home/deploy/.pm2`, applies `.env` via `--update-env` without copying the rest of the shell, and runs `pm2 save`. Nginx for `mcp.zyf.ai` is left alone.
 
 ## Repository map
 

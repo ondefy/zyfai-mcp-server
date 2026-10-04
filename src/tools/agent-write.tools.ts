@@ -65,7 +65,7 @@ export function registerAgentWriteTools(
 
   server.tool(
     "prepare_deposit",
-    "Prepare an ERC-20 transfer into the user's Zyfai wallet. Returns transfer calldata, a deposit intent actionId, and signingUrl. The user signs in a normal browser—not inside the MCP host. Then poll get_deposit_status or call register_deposit if the signing page did not register the tx.",
+    "Prepare an ERC-20 transfer into the user's Zyfai wallet. Returns transfer calldata, a deposit intent actionId, and signingUrl. Show signingUrl to the user and ask them to open it in their browser. Do not call another tool in that same turn. The user signs on that page, not inside the MCP host. After they have seen the link, poll get_deposit_status or call wait_for_deposit_handover. Call register_deposit if the signing page did not register the tx.",
     prepareDepositSchema,
     WRITE_DEPOSIT_ANNOTATIONS,
     async ({ chainId, amount, asset }) => {

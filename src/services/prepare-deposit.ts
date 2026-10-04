@@ -37,7 +37,7 @@ export async function runPrepareDeposit(
     actionId: intent.actionId,
     signingUrl: intent.signingUrl,
     nextStep:
-      "Open signingUrl in the user's browser. In the same turn, call wait_for_deposit_handover with actionId (or poll get_deposit_status) while the user signs.",
+      "Show the user signingUrl and ask them to open it in their browser. That link opens the deposit page for them to sign. Stop and wait. Do not call wait_for_deposit_handover, get_deposit_status, or any other tool in this turn. After the user has seen the link, call wait_for_deposit_handover with actionId (or poll get_deposit_status) while they sign.",
   };
 }
 

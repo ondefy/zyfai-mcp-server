@@ -42,6 +42,7 @@
     "start": "node build/index.js",
     "dev": "tsc && node build/index.js",
     "dev:watch": "sh scripts/dev-watch.sh",
+    "release": "bash scripts/release.sh",
     "clean": "rm -rf build"
   }
 }
