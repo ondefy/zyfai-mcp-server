@@ -3,7 +3,7 @@
   "name": "io.github.ondefy/zyfai",
   "title": "Zyfai",
   "description": "Discover DeFi yield opportunities and manage Zyfai positions with self-custodial AI agents.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "websiteUrl": "https://docs.zyf.ai/docs/sdk/mcp-server",
   "repository": {
     "url": "https://github.com/ondefy/zyfai-mcp-server",
