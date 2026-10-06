@@ -40,7 +40,7 @@ See `.env.example`. Required for live API calls:
 
 - **Chains:** only `@zyfai/sdk` `SupportedChainId`: `1`, `8453`, `42161`. Tool schemas live in `src/config/chains.ts`.
 - Data-only chains on defi-api (e.g. Plasma `9745`) are **not** exposed here until the SDK adds them.
-- **Strategies:** MCP tool names use public `conservative` / `aggressive`; the SDK maps to `safe` / `degen` internally.
+- **Strategies:** MCP tools use public `conservative`, `aggressive`, and `yieldmaxxing`. Strategy writes call SDK `setStrategyWithProtocols` so protocols match the tier; asset scope comes from SDK `getManagedAssets()` when `asset` is omitted.
 
 ## Commands
 
