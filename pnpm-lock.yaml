@@ -12,8 +12,8 @@ importers:
         specifier: ^1.12.0
         version: 1.31.0(zod@3.25.76)
       '@zyfai/sdk':
-        specifier: github:ondefy/zyfai-sdk#1800e04
-        version: https://codeload.github.com/ondefy/zyfai-sdk/tar.gz/1800e04(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))
+        specifier: ^0.8.0
+        version: 0.8.0(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -501,9 +501,8 @@ packages:
   '@vitest/utils@3.2.7':
     resolution: {integrity: sha512-x6BDOd7dyo3PFLY3I9/HJ25X/6OurhGXk2/B9gOZNPF7XDVjeBK4k01lQE5uvDpbuheErh91qYuE1E2OEjK3Rw==}
 
-  '@zyfai/sdk@https://codeload.github.com/ondefy/zyfai-sdk/tar.gz/1800e04':
-    resolution: {tarball: https://codeload.github.com/ondefy/zyfai-sdk/tar.gz/1800e04}
-    version: 0.6.0
+  '@zyfai/sdk@0.8.0':
+    resolution: {integrity: sha512-AAZInP7D+5AtMlyp1jM8jvU6I87d4xjkOPRbdMqGHZ/HLJokRsoO87Dg16Qi4UXuNIz1lBX7zhE0Hmnsxd1gYQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       viem: ^2.0.0
@@ -1710,7 +1709,7 @@ snapshots:
       loupe: 3.2.1
       tinyrainbow: 2.0.0
 
-  '@zyfai/sdk@https://codeload.github.com/ondefy/zyfai-sdk/tar.gz/1800e04(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))':
+  '@zyfai/sdk@0.8.0(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))':
     dependencies:
       '@rhinestone/module-sdk': 0.2.11(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))
       axios: 1.20.0
