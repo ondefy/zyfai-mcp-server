@@ -1,3 +1,4 @@
+import { getManagedAssets } from "@zyfai/sdk";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { requireMcpAuth, scopeIncludes } from "../auth/request-context.js";
@@ -11,6 +12,11 @@ import {
   consumeDepositIntent,
   depositIntentRegistrationMismatch,
 } from "../services/deposit-intent.js";
+import {
+  applyNonStrategyProfileUpdates,
+  applyStrategyWithProtocols,
+  assertNoStrategyWithExplicitProtocols,
+} from "../services/apply-strategy-settings.js";
 import { runPrepareDeposit } from "../services/prepare-deposit.js";
 import type { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import {
@@ -213,11 +219,47 @@ export function registerAgentWriteTools(
     },
   );
 
+  const setStrategySchema = {
+    strategy: strategySchema,
+    asset: depositAssetSchema.optional(),
+    chains: z.array(executionChainIdSchema).optional(),
+  };
+
+  async function runSetStrategy(
+    strategy: z.infer<typeof strategySchema>,
+    asset?: z.infer<typeof depositAssetSchema>,
+    chains?: z.infer<typeof executionChainIdSchema>[],
+  ) {
+    requireAuthForTool();
+    if (!scopeIncludes("mcp:tools:write:configure")) {
+      return toolError("Missing scope mcp:tools:write:configure");
+    }
+    await applyStrategyWithProtocols(zyfiApi, { strategy, asset, chains });
+    const settings = await zyfiApi.getAssetTypeSettings();
+    return toolJsonContent(settings, "Strategy updated with matching protocols");
+  }
+
+  server.tool(
+    "set_strategy",
+    "Change the user's yield strategy (conservative, aggressive, or yieldmaxxing) and auto-select protocols for that tier. Omit asset to apply to all SDK-managed assets. Do not pass protocol IDs.",
+    setStrategySchema,
+    WRITE_DESTRUCTIVE_ANNOTATIONS,
+    async ({ strategy, asset, chains }) => {
+      try {
+        return await runSetStrategy(strategy, asset, chains);
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
   server.tool(
     "update_settings",
-    "Update the user's canonical Zyfai management settings (strategy, chains, protocols). Send only fields you want to change. Allocation after deposit uses these settings.",
+    "Update Zyfai management settings. When strategy is set, matching protocols are auto-selected (omit asset to update all managed assets). Do not pass protocols together with strategy; use protocols only for manual advanced tuning without strategy.",
     {
-      asset: depositAssetSchema.default("USDC"),
+      asset: depositAssetSchema.optional(),
       strategy: strategySchema.optional(),
       chains: z.array(executionChainIdSchema).optional(),
       protocols: z.array(z.string()).optional(),
@@ -230,14 +272,37 @@ export function registerAgentWriteTools(
         if (!scopeIncludes("mcp:tools:write:configure")) {
           return toolError("Missing scope mcp:tools:write:configure");
         }
-        const response = await zyfiApi.updateUserProfile({
-          asset,
-          ...(strategy !== undefined && { strategy }),
-          ...(chains !== undefined && { chains }),
-          ...(protocols !== undefined && { protocols }),
-          ...(autoSelectProtocols !== undefined && { autoSelectProtocols }),
-        });
-        return toolJsonContent(response, "Settings updated");
+
+        assertNoStrategyWithExplicitProtocols(strategy, protocols);
+
+        if (strategy !== undefined) {
+          await applyStrategyWithProtocols(zyfiApi, {
+            strategy,
+            asset,
+            chains,
+          });
+        } else {
+          const profileAsset = asset ?? "USDC";
+          await applyNonStrategyProfileUpdates(zyfiApi, {
+            asset: profileAsset,
+            chains,
+            protocols,
+            autoSelectProtocols,
+          });
+        }
+
+        if (strategy !== undefined && autoSelectProtocols !== undefined) {
+          const assets = asset ? [asset] : getManagedAssets();
+          for (const profileAsset of assets) {
+            await applyNonStrategyProfileUpdates(zyfiApi, {
+              asset: profileAsset,
+              autoSelectProtocols,
+            });
+          }
+        }
+
+        const settings = await zyfiApi.getAssetTypeSettings();
+        return toolJsonContent(settings, "Settings updated");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

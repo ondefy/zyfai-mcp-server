@@ -10,7 +10,7 @@ const supportedIds = getSupportedChainIds();
 export const CHAIN_ID_DESCRIPTION =
   "Chain ID (1 Ethereum Mainnet, 8453 Base, 42161 Arbitrum)";
 
-const literals = supportedIds.map((id) => z.literal(id)) as [
+const literals = supportedIds.map((id: SupportedChainId) => z.literal(id)) as [
   z.ZodLiteral<SupportedChainId>,
   z.ZodLiteral<SupportedChainId>,
   ...z.ZodLiteral<SupportedChainId>[],

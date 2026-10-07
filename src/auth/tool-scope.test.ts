@@ -47,6 +47,22 @@ describe("authorizeMcpToolCall", () => {
     expect(protectedResourceScopes(true)).not.toContain("mcp:tools:write");
   });
 
+  it("requires configure scope for set_strategy", () => {
+    expect(
+      authorizeMcpToolCall("set_strategy", { scope: "mcp:tools:read" }),
+    ).toMatchObject({
+      ok: false,
+      status: 403,
+      error: "insufficient_scope",
+      message: "Missing scope mcp:tools:write:configure",
+    });
+    expect(
+      authorizeMcpToolCall("set_strategy", {
+        scope: "mcp:tools:read mcp:tools:write:configure",
+      }),
+    ).toEqual({ ok: true });
+  });
+
   it("allows a session that includes the tool scope", () => {
     expect(
       authorizeMcpToolCall("preview_action", { scope: "mcp:tools:read" }),
