@@ -22,6 +22,9 @@ describe("deposit-intent API bridge", () => {
     expect(chatLabelFromClientId("https://grok.com/oauth/client.json")).toBe(
       "Grok",
     );
+    expect(chatLabelFromClientId("https://cursor.com/oauth/client.json")).toBe(
+      "Cursor",
+    );
     expect(chatLabelFromClientId("dyn_unknown")).toBeUndefined();
   });
 

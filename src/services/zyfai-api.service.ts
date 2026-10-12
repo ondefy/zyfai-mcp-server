@@ -206,6 +206,42 @@ export class ZyfaiApiService {
     return sdk.waitForDepositCredit(depositId, chainId);
   }
 
+  async waitForDepositPosition(
+    depositId: string,
+    chainId: SupportedChainId,
+    options?: { intervalMs?: number; timeoutMs?: number },
+  ) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.waitForDepositPosition(depositId, chainId, options);
+  }
+
+  async getWithdrawStatus(withdrawalId: string) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.getWithdrawStatus(withdrawalId);
+  }
+
+  async waitForWithdrawSettlement(
+    withdrawalId: string,
+    chainId: SupportedChainId,
+    options?: { intervalMs?: number; timeoutMs?: number },
+  ) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.waitForWithdrawSettlement(withdrawalId, chainId, options);
+  }
+
+  async waitForWithdrawComplete(
+    withdrawalId: string,
+    chainId: SupportedChainId,
+    options?: {
+      intervalMs?: number;
+      cooldownIntervalMs?: number;
+      timeoutMs?: number;
+    },
+  ) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.waitForWithdrawComplete(withdrawalId, chainId, options);
+  }
+
   async waitForAgentDepositHandover(
     actionId: string,
     chainId: SupportedChainId,

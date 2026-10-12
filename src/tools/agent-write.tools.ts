@@ -38,7 +38,7 @@ const withdrawToolSchema = {
 };
 
 const withdrawToolDescription =
-  "Withdraw funds from the user's Zyfai smart wallet to the owner's address using the existing Zyfai withdrawal backend. Omit amount for a full withdrawal on the chain.";
+  "Withdraw funds from the user's Zyfai smart wallet to the owner's address using the existing Zyfai withdrawal backend. Omit amount for a full withdrawal on the chain. The response may include lifecycle.id; poll get_withdraw_status or call wait_for_withdraw_settlement then wait_for_withdraw_complete for async vault legs.";
 
 async function runWithdrawTool(
   zyfiApi: ZyfaiApiService,
@@ -71,7 +71,7 @@ export function registerAgentWriteTools(
 
   server.tool(
     "prepare_deposit",
-    "Prepare an ERC-20 transfer into the user's Zyfai wallet. Returns transfer calldata, a deposit intent actionId, and signingUrl. Show signingUrl to the user and ask them to open it in their browser. Do not call another tool in that same turn. The user signs on that page, not inside the MCP host. After they have seen the link, poll get_deposit_status or call wait_for_deposit_handover. Call register_deposit if the signing page did not register the tx.",
+    "Prepare an ERC-20 transfer into the user's Zyfai wallet. Returns transfer calldata, a deposit intent actionId, and signingUrl. Show signingUrl to the user and ask them to open it in their browser. Do not call another tool in that same turn. The user signs on that page, not inside the MCP host. After they have seen the link, poll get_deposit_status or call wait_for_deposit_handover. Optionally call wait_for_deposit_position after credit when allocation matters. Call register_deposit if the signing page did not register the tx.",
     prepareDepositSchema,
     WRITE_DEPOSIT_ANNOTATIONS,
     async ({ chainId, amount, asset }) => {

@@ -278,9 +278,24 @@ export function registerAgentTools(
     },
   );
 
+  const lifecyclePollOptionsSchema = {
+    timeoutMs: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Max wait in ms (SDK chain defaults apply when omitted)"),
+    intervalMs: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe("Poll interval in ms"),
+  };
+
   server.tool(
     "get_deposit_status",
-    "Poll deposit progress. Pass actionId after prepare_deposit (intent status), or depositId after registration (handover and credit lifecycle).",
+    "Poll deposit progress. Pass actionId after prepare_deposit (intent status), or depositId after registration (handover, credit, and allocation lifecycle). After credit, use wait_for_deposit_position when the user needs funds allocated to a protocol.",
     {
       actionId: z.string().optional(),
       depositId: z.string().optional(),
@@ -302,6 +317,120 @@ export function registerAgentTools(
           return toolJsonContent(status, "Deposit lifecycle status");
         }
         return toolError("actionId or depositId is required");
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "wait_for_deposit_position",
+    "Block until a credited deposit is allocated to a protocol position, skipped, failed, or (for cross-chain) the bridge execution tx is recorded. Call after wait_for_deposit_handover or register_deposit when waitForCredit succeeded. Destination-chain allocation is not tracked on cross-chain deposits.",
+    {
+      depositId: z.string().describe("depositId from handover or register_deposit"),
+      chainId: executionChainIdSchema,
+      ...lifecyclePollOptionsSchema,
+    },
+    READ_TOOL_ANNOTATIONS,
+    async ({ depositId, chainId, timeoutMs, intervalMs }) => {
+      try {
+        requireAuthForTool();
+        requireReadScope();
+        const status = await zyfiApi.waitForDepositPosition(depositId, chainId, {
+          timeoutMs,
+          intervalMs,
+        });
+        return toolJsonContent(status, "Deposit position outcome");
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "get_withdraw_status",
+    "Poll withdraw lifecycle progress. Pass withdrawalId from the lifecycle.id field on withdraw or register_withdraw when present.",
+    {
+      withdrawalId: z.string(),
+    },
+    READ_TOOL_ANNOTATIONS,
+    async ({ withdrawalId }) => {
+      try {
+        requireAuthForTool();
+        requireReadScope();
+        const status = await zyfiApi.getWithdrawStatus(withdrawalId);
+        return toolJsonContent(status, "Withdraw lifecycle status");
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "wait_for_withdraw_settlement",
+    "Short poll after withdraw: completes when the sync slice settles, async enters cooldown, or claim is already in flight (resume/retry). Use lifecycle.id from withdraw. Follow with wait_for_withdraw_complete for async vault legs.",
+    {
+      withdrawalId: z.string(),
+      chainId: executionChainIdSchema,
+      ...lifecyclePollOptionsSchema,
+    },
+    READ_TOOL_ANNOTATIONS,
+    async ({ withdrawalId, chainId, timeoutMs, intervalMs }) => {
+      try {
+        requireAuthForTool();
+        requireReadScope();
+        const status = await zyfiApi.waitForWithdrawSettlement(
+          withdrawalId,
+          chainId,
+          { timeoutMs, intervalMs },
+        );
+        return toolJsonContent(status, "Withdraw settlement phase complete");
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "wait_for_withdraw_complete",
+    "Long poll through async cooldown and claim until the withdraw lifecycle is completed. Use after wait_for_withdraw_settlement when async legs may remain.",
+    {
+      withdrawalId: z.string(),
+      chainId: executionChainIdSchema,
+      timeoutMs: lifecyclePollOptionsSchema.timeoutMs,
+      intervalMs: lifecyclePollOptionsSchema.intervalMs,
+      cooldownIntervalMs: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe("Poll interval while in async cooldown"),
+    },
+    READ_TOOL_ANNOTATIONS,
+    async ({
+      withdrawalId,
+      chainId,
+      timeoutMs,
+      intervalMs,
+      cooldownIntervalMs,
+    }) => {
+      try {
+        requireAuthForTool();
+        requireReadScope();
+        const status = await zyfiApi.waitForWithdrawComplete(
+          withdrawalId,
+          chainId,
+          { timeoutMs, intervalMs, cooldownIntervalMs },
+        );
+        return toolJsonContent(status, "Withdraw complete");
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

@@ -121,7 +121,7 @@ pnpm run release
 | `src/config/env.ts` | Environment |
 | `src/config/chains.ts` | Shared chain Zod schemas |
 
-Repo overview: [`README.md`](README.md). Public tool list, auth, and client setup: [docs.zyf.ai MCP guide](https://docs.zyf.ai/docs/sdk/mcp-server).
+Repo overview: [`README.md`](README.md). Public tool list, auth, and client setup: [docs.zyf.ai MCP guide](https://docs.zyf.ai/docs/sdk/mcp-server). Post-deploy QA in Cursor: [`docs/cursor-release-gate.md`](docs/cursor-release-gate.md) (workspace `.cursor/mcp.json` → `zyfai-mcp-server.prod` / `.local`).
 
 ## Task completion
 
