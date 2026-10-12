@@ -74,6 +74,24 @@ describe("authorizeMcpToolCall", () => {
     ).toEqual({ ok: true });
   });
 
+  it("requires read scope for deposit and withdraw lifecycle tools", () => {
+    const lifecycleTools = [
+      "wait_for_deposit_position",
+      "get_withdraw_status",
+      "wait_for_withdraw_settlement",
+      "wait_for_withdraw_complete",
+    ];
+    for (const toolName of lifecycleTools) {
+      expect(authorizeMcpToolCall(toolName, undefined)).toMatchObject({
+        ok: false,
+        status: 401,
+      });
+      expect(
+        authorizeMcpToolCall(toolName, { scope: "mcp:tools:read" }),
+      ).toEqual({ ok: true });
+    }
+  });
+
   it("treats unlisted tool names as read-scoped (not public)", () => {
     expect(
       authorizeMcpToolCall("hypothetical_unlisted_tool", undefined),
