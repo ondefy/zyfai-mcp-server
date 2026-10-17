@@ -310,4 +310,87 @@ export function registerAgentWriteTools(
       }
     },
   );
+
+  server.tool(
+    "set_manual_allocation",
+    "Turn opportunity rebalancing off for one asset and allocate that asset's whole balance. Percentages are per chain and sum to 10000 basis points. The switch covers the whole asset: do not pass an amount, a receiver, or a user address. A suspended vault stays idle until the user saves again.",
+    setManualAllocationSchema,
+    WRITE_DESTRUCTIVE_ANNOTATIONS,
+    async ({ assetType, targets }) => {
+      try {
+        requireAuthForTool();
+        if (!scopeIncludes("mcp:tools:write:configure")) {
+          return toolError("Missing scope mcp:tools:write:configure");
+        }
+        const result = await zyfiApi.setManualAllocation({
+          assetType,
+          targets,
+        });
+        const settings = await zyfiApi.getAssetTypeSettings();
+        return toolJsonContent({ result, settings }, "Manual allocation saved");
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
+
+  server.tool(
+    "resume_opportunity_rebalance",
+    "Turn opportunity rebalancing back on for one asset and delete its manual targets. Do not pass a user address.",
+    resumeOpportunityRebalanceSchema,
+    WRITE_DESTRUCTIVE_ANNOTATIONS,
+    async ({ assetType }) => {
+      try {
+        requireAuthForTool();
+        if (!scopeIncludes("mcp:tools:write:configure")) {
+          return toolError("Missing scope mcp:tools:write:configure");
+        }
+        const result = await zyfiApi.resumeOpportunityRebalance(assetType);
+        const settings = await zyfiApi.getAssetTypeSettings();
+        return toolJsonContent(
+          { result, settings },
+          "Opportunity rebalancing resumed",
+        );
+      } catch (error) {
+        return toolError(
+          error instanceof Error ? error.message : "Unknown error",
+        );
+      }
+    },
+  );
 }
+
+const manualAssetTypeSchema = z.enum([
+  "usdc",
+  "eth",
+  "eurc",
+  "usdt",
+  "pyusd",
+  "nvdac",
+]);
+
+export const setManualAllocationSchema = {
+  assetType: manualAssetTypeSchema.describe(
+    "Asset the allocation covers. The whole balance of this asset is included.",
+  ),
+  targets: z
+    .array(
+      z.object({
+        chainId: executionChainIdSchema,
+        protocolId: z.string().uuid(),
+        pool: z.string().min(1),
+        weightBps: z
+          .number()
+          .int()
+          .positive()
+          .describe("Share of this chain in basis points. Chain shares sum to 10000."),
+      }),
+    )
+    .min(1),
+};
+
+export const resumeOpportunityRebalanceSchema = {
+  assetType: manualAssetTypeSchema,
+};
