@@ -171,7 +171,22 @@ export class ZyfaiApiService {
     chainId: SupportedChainId;
   }) {
     const sdk = await this.sdkForUserScoped();
-    return sdk.ensureDepositAssetOnChain(params);
+    const details = await sdk.getUserDetails(params.asset);
+    if (details.chains?.includes(params.chainId)) {
+      return { applied: false };
+    }
+
+    await sdk.setAssetStrategy({
+      asset: params.asset,
+      chains: [params.chainId],
+    });
+    const after = await sdk.getUserDetails(params.asset);
+    if (!after.chains?.includes(params.chainId)) {
+      throw new Error(
+        `First-deposit setup did not persist ${params.asset} chain ${params.chainId} configuration.`,
+      );
+    }
+    return { applied: true };
   }
 
   async prepareDeposit(params: {
