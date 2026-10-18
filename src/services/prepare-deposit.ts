@@ -1,4 +1,8 @@
-import type { SupportedAsset, SupportedChainId } from "@zyfai/sdk";
+import {
+  resolveDepositRoute,
+  type SupportedAsset,
+  type SupportedChainId,
+} from "@zyfai/sdk";
 import { createDepositIntent } from "./deposit-intent.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
 import { waitForDepositHandover } from "./wait-for-deposit-handover.js";
@@ -9,6 +13,10 @@ export type PrepareDepositParams = {
   amount: string;
   asset: SupportedAsset;
   clientLabel?: string;
+  /** Token the wallet spends. Omit when it already holds `asset` on `chainId`. */
+  spendToken?: string;
+  /** Chain the spend token is on. Defaults to `chainId`. */
+  spendChainId?: number;
 };
 
 /** Shared prepare_deposit orchestration for MCP and unit tests. */
@@ -16,7 +24,41 @@ export async function runPrepareDeposit(
   zyfiApi: ZyfaiApiService,
   params: PrepareDepositParams,
 ) {
-  const { userAddress, chainId, amount, asset, clientLabel } = params;
+  const { userAddress, chainId, amount, asset, clientLabel, spendToken, spendChainId } =
+    params;
+  const route = resolveDepositRoute({
+    chainId,
+    asset,
+    spendToken,
+    spendChainId,
+  });
+  const nextStep =
+    "Show the user signingUrl and ask them to open it in their browser. That link opens the deposit page for them to sign. Stop and wait. Do not call wait_for_deposit_handover, get_deposit_status, or any other tool in this turn. After the user has seen the link, call wait_for_deposit_handover with actionId (or poll get_deposit_status) while they sign.";
+
+  if (route.kind !== "direct") {
+    const spend = spendToken?.trim();
+    if (!spend) {
+      throw new Error("spendToken is required when the wallet does not hold the collateral");
+    }
+    const setup = await zyfiApi.ensureDepositAssetOnChain({ asset, chainId });
+    const intent = await createDepositIntent(zyfiApi, {
+      chainId,
+      asset,
+      amount,
+      clientLabel,
+      spend: {
+        spendToken: spend,
+        spendChainId: route.kind === "swap" ? route.originChainId : chainId,
+      },
+    });
+    return {
+      preswap: true as const,
+      setup,
+      actionId: intent.actionId,
+      signingUrl: intent.signingUrl,
+      nextStep,
+    };
+  }
 
   const response = await zyfiApi.prepareDeposit({
     userAddress,
@@ -36,8 +78,7 @@ export async function runPrepareDeposit(
     ...response,
     actionId: intent.actionId,
     signingUrl: intent.signingUrl,
-    nextStep:
-      "Show the user signingUrl and ask them to open it in their browser. That link opens the deposit page for them to sign. Stop and wait. Do not call wait_for_deposit_handover, get_deposit_status, or any other tool in this turn. After the user has seen the link, call wait_for_deposit_handover with actionId (or poll get_deposit_status) while they sign.",
+    nextStep,
   };
 }
 

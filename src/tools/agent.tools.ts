@@ -132,7 +132,7 @@ export function registerAgentTools(
 
   server.tool(
     "find_opportunities",
-    "Discover yield opportunities Zyfai currently tracks. Informational only—funding uses prepare_deposit; allocation follows the user's Zyfai settings.",
+    "Discover yield opportunities Zyfai currently tracks. Informational only. Funding uses prepare_deposit. Pass spendToken when the wallet holds a different token. Allocation follows the user's Zyfai settings.",
     {
       strategy: z
         .enum(["conservative", "aggressive"])

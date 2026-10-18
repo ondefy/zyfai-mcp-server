@@ -166,6 +166,14 @@ export class ZyfaiApiService {
     return sdk.customizeBatch(customizations);
   }
 
+  async ensureDepositAssetOnChain(params: {
+    asset: SupportedAsset;
+    chainId: SupportedChainId;
+  }) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.ensureDepositAssetOnChain(params);
+  }
+
   async prepareDeposit(params: {
     userAddress: string;
     chainId: SupportedChainId;

@@ -44,6 +44,38 @@ describe("runPrepareDeposit", () => {
       asset: "USDC",
     });
     expect(result.actionId).toBe("act-1");
+    expect(result).not.toHaveProperty("preswap");
+    expect(result.signingUrl).not.toContain("spendToken=");
+  });
+
+  it("puts a non-collateral spend on the signing link and does not build a transfer", async () => {
+    const prepareDeposit = vi.fn();
+    const ensureDepositAssetOnChain = vi.fn().mockResolvedValue({ applied: true });
+    const createAgentDepositIntent = vi.fn().mockResolvedValue({
+      data: { actionId: "act-3", signingTicket: "ticket-3" },
+    });
+    const zyfiApi = {
+      prepareDeposit,
+      ensureDepositAssetOnChain,
+      createAgentDepositIntent,
+    } as unknown as ZyfaiApiService;
+
+    const result = await runPrepareDeposit(zyfiApi, {
+      ...baseParams,
+      amount: "1000000000000000000",
+      spendToken: "ETH",
+      spendChainId: 1,
+    });
+
+    expect(prepareDeposit).not.toHaveBeenCalled();
+    expect(ensureDepositAssetOnChain).toHaveBeenCalledWith({
+      asset: "USDC",
+      chainId: 8453,
+    });
+    expect(result.preswap).toBe(true);
+    expect(result.signingUrl).toContain("spendToken=ETH");
+    expect(result.signingUrl).toContain("spendChainId=1");
+    expect(result).not.toHaveProperty("transfer");
   });
 
   it("starts handover listening as soon as prepare finishes", async () => {
