@@ -1,4 +1,8 @@
-import { getManagedAssets } from "@zyfai/sdk";
+import {
+  DEFAULT_RELAY_SLIPPAGE_BPS,
+  MAX_RELAY_SLIPPAGE_BPS,
+  getManagedAssets,
+} from "@zyfai/sdk";
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { requireMcpAuth, scopeIncludes } from "../auth/request-context.js";
@@ -91,7 +95,7 @@ export function registerAgentWriteTools(
 
   server.tool(
     "prepare_deposit",
-    "Prepare a deposit and return signingUrl. The user opens that link and signs on the Zyfai deposit page. Omit spendToken when the wallet already holds the collateral on chainId: the page transfers it. Set spendToken, and spendChainId when that token is on another chain, to prepare a preswap into the collateral. The page performs the preswap. Show signingUrl and ask the user to open it in their browser. Do not call another tool in that same turn. Do not ask for a seed phrase or private key. After they have seen the link, poll get_deposit_status or call wait_for_deposit_handover. Optionally call wait_for_deposit_position after credit when allocation matters. Call register_deposit only when the page did not register the transfer.",
+    `Prepare a deposit and return signingUrl. The user opens that link and signs on the Zyfai deposit page. Omit spendToken when the wallet already holds the collateral on chainId: the page transfers it. Set spendToken, and spendChainId when that token is on another chain, to prepare a preswap into the collateral. The page performs the preswap at the execution API default slippage of ${DEFAULT_RELAY_SLIPPAGE_BPS} basis points (maximum ${MAX_RELAY_SLIPPAGE_BPS}). The page does not take a custom slippage. Show signingUrl and ask the user to open it in their browser. Do not call another tool in that same turn. Do not ask for a seed phrase or private key. After they have seen the link, poll get_deposit_status or call wait_for_deposit_handover. Optionally call wait_for_deposit_position after credit when allocation matters. Call register_deposit only when the page did not register the transfer.`,
     prepareDepositSchema,
     WRITE_DEPOSIT_ANNOTATIONS,
     async ({ chainId, amount, asset, spendToken, spendChainId }) => {

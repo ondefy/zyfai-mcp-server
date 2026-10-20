@@ -1,5 +1,7 @@
+import { resolveDepositRoute } from "@zyfai/sdk";
 import { describe, expect, it } from "vitest";
-import { NATIVE_CURRENCY, resolveDepositRoute } from "./deposit-route.js";
+
+const NATIVE_CURRENCY = "0x0000000000000000000000000000000000000000";
 
 const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const BASE_WETH = "0x4200000000000000000000000000000000000006";

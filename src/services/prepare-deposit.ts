@@ -1,6 +1,9 @@
-import type { SupportedAsset, SupportedChainId } from "@zyfai/sdk";
+import {
+  resolveDepositRoute,
+  type SupportedAsset,
+  type SupportedChainId,
+} from "@zyfai/sdk";
 import { createDepositIntent } from "./deposit-intent.js";
-import { resolveDepositRoute } from "./deposit-route.js";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
 import { waitForDepositHandover } from "./wait-for-deposit-handover.js";
 
