@@ -19,6 +19,12 @@ describe("deposit-intent API bridge", () => {
   it("names the chat on the signing URL when the client is known", () => {
     const url = buildSigningUrl("ticket-abc", "Grok");
     expect(url).toContain("client=Grok");
+    const funded = buildSigningUrl("ticket-abc", "Grok", {
+      spendToken: "ETH",
+      spendChainId: 1,
+    });
+    expect(funded).toContain("spendToken=ETH");
+    expect(funded).toContain("spendChainId=1");
     expect(chatLabelFromClientId("https://grok.com/oauth/client.json")).toBe(
       "Grok",
     );

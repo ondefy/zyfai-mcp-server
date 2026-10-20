@@ -12,8 +12,8 @@ importers:
         specifier: ^1.12.0
         version: 1.31.0(zod@3.25.76)
       '@zyfai/sdk':
-        specifier: ^0.10.0
-        version: 0.10.0(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))
+        specifier: ^0.11.2
+        version: 0.11.2(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))
       cors:
         specifier: ^2.8.5
         version: 2.8.6
@@ -260,6 +260,11 @@ packages:
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
 
+  '@relayprotocol/relay-sdk@8.0.4':
+    resolution: {integrity: sha512-vnUB2U37BWTdXNnE09SxeqF/qcGbhdIFLHNQmjMPIe7ebwn/wggqJTbO79aJJ9hVH5f8ow2SKbem4ZdYRm9oIA==}
+    peerDependencies:
+      viem: '>=2.26.0'
+
   '@rhinestone/module-sdk@0.2.11':
     resolution: {integrity: sha512-FE8lMpKqU6tR5XjGPUHQPl2nzL5u78/GankestQ7kFzbSBvjpgGc85cLkNZjhlaNq3caYyGYz16yD7y/Vqnolg==}
     deprecated: This SDK is no longer supported. Please switch to '@rhinestone/sdk' to continue getting updates.
@@ -501,8 +506,8 @@ packages:
   '@vitest/utils@3.2.7':
     resolution: {integrity: sha512-x6BDOd7dyo3PFLY3I9/HJ25X/6OurhGXk2/B9gOZNPF7XDVjeBK4k01lQE5uvDpbuheErh91qYuE1E2OEjK3Rw==}
 
-  '@zyfai/sdk@0.10.0':
-    resolution: {integrity: sha512-JLNX09lM7avgRhvxlvOmBAiyGu4GfnWMpx6RZ0dhHC20pkszhUfOi6e77QCsptGbzseYfz7qK+4GYdIt1xpylg==}
+  '@zyfai/sdk@0.11.2':
+    resolution: {integrity: sha512-Jgmcwaxr5p1UcY0ju33pjs/NV2JsYD5ckNkzT6lnbkyJA5uXmG/F3fr1tz9rmL3/LRoWSKKiGz6QFRwph/I17w==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       viem: ^2.0.0
@@ -1481,6 +1486,14 @@ snapshots:
 
   '@noble/hashes@1.8.0': {}
 
+  '@relayprotocol/relay-sdk@8.0.4(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))':
+    dependencies:
+      axios: 1.20.0
+      viem: 2.57.2(typescript@5.9.3)(zod@3.25.76)
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+
   '@rhinestone/module-sdk@0.2.11(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))':
     dependencies:
       solady: 0.0.235
@@ -1709,8 +1722,9 @@ snapshots:
       loupe: 3.2.1
       tinyrainbow: 2.0.0
 
-  '@zyfai/sdk@0.10.0(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))':
+  '@zyfai/sdk@0.11.2(ethers@6.17.0)(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))':
     dependencies:
+      '@relayprotocol/relay-sdk': 8.0.4(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))
       '@rhinestone/module-sdk': 0.2.11(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))
       axios: 1.20.0
       permissionless: 0.2.57(viem@2.57.2(typescript@5.9.3)(zod@3.25.76))

@@ -7,6 +7,7 @@ export type DepositIntentParams = {
   asset: string;
   amount: string;
   clientLabel?: string;
+  spend?: SigningSpend;
   txHash?: string;
   depositId?: string;
 };
@@ -82,15 +83,25 @@ export type CreatedDepositIntent = {
   signingUrl: string;
 };
 
+export type SigningSpend = {
+  spendToken: string;
+  spendChainId: number;
+};
+
 export function buildSigningUrl(
   signingTicket: string,
   clientLabel?: string,
+  spend?: SigningSpend,
 ): string {
   const base = config.zyfaiWebSigningBase;
-  const ticket = encodeURIComponent(signingTicket);
-  const url = `${base}/agent/deposit-sign?ticket=${ticket}`;
-  if (!clientLabel) return url;
-  return `${url}&client=${encodeURIComponent(clientLabel)}`;
+  const params = new URLSearchParams();
+  params.set("ticket", signingTicket);
+  if (clientLabel) params.set("client", clientLabel);
+  if (spend) {
+    params.set("spendToken", spend.spendToken);
+    params.set("spendChainId", String(spend.spendChainId));
+  }
+  return `${base}/agent/deposit-sign?${params.toString()}`;
 }
 
 export async function createDepositIntent(
@@ -105,7 +116,11 @@ export async function createDepositIntent(
   return {
     actionId: data.actionId,
     signingTicket: data.signingTicket,
-    signingUrl: buildSigningUrl(data.signingTicket, intent.clientLabel),
+    signingUrl: buildSigningUrl(
+      data.signingTicket,
+      intent.clientLabel,
+      intent.spend,
+    ),
   };
 }
 

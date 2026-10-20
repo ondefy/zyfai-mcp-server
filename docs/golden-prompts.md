@@ -18,7 +18,7 @@ Release checklist: [`cursor-release-gate.md`](cursor-release-gate.md).
 
 ## Writes (requires `MCP_WRITE_TOOLS_ENABLED` on server and matching OAuth scopes)
 
-7. **Deposit (Cursor, local write):** `prepare_deposit` → open `signingUrl` in the system browser (not inside the IDE webview) → user signs on zyf.ai → `wait_for_deposit_handover` or poll `get_deposit_status` with `actionId` until `completed` → optional `wait_for_deposit_position` with `depositId` until allocated.
+7. **Deposit (Cursor, local write):** `prepare_deposit` (optional `spendToken` when the wallet does not hold the collateral; a preswap uses the default 200 bps slippage) → open `signingUrl` in the system browser (not inside the IDE webview) → user signs on zyf.ai → `wait_for_deposit_handover` or poll `get_deposit_status` with `actionId` until `completed` → optional `wait_for_deposit_position` with `depositId` until allocated.
 8. **Deposit (fallback):** `register_deposit` with tx hash if signing happened outside the page flow.
 9. **Withdraw (write):** `withdraw` on Base → note `lifecycle.id` → `wait_for_withdraw_settlement` then `wait_for_withdraw_complete` (or poll `get_withdraw_status`).
 10. **Settings:** `update_settings` to switch strategy (requires `mcp:tools:write:configure`).
