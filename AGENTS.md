@@ -44,6 +44,8 @@ See `.env.example`. Required for live API calls:
 
 ## Commands
 
+Use Node **22.23.4** (CI / [`.nvmrc`](.nvmrc)) and the pnpm version in `package.json`.
+
 ```bash
 pnpm install
 pnpm run check    # tsc --noEmit + build + unit tests — canonical validation
@@ -110,7 +112,7 @@ On the MCP host, from `/apps/zyfai-mcp-server`:
 pnpm run release
 ```
 
-[`scripts/release.sh`](scripts/release.sh) pulls `main` as `deploy` (GitHub SSH key), then `pnpm install --frozen-lockfile` and `pnpm run build` as the current user (`sudo -u deploy pnpm` is not on the sudoers whitelist). It restarts PM2 app `zyfai-mcp-server` with `PM2_HOME=/home/deploy/.pm2`, applies `.env` via `--update-env` without copying the rest of the shell, and runs `pm2 save`. Nginx for `mcp.zyf.ai` is left alone.
+[`scripts/release.sh`](scripts/release.sh) pulls `main` as `deploy` (GitHub SSH key), then `pnpm install --frozen-lockfile` and `pnpm run build` as the current user (`sudo -u deploy pnpm` is not on the sudoers whitelist). It restarts PM2 app `zyfai-mcp-server` with `PM2_HOME=/home/deploy/.pm2`, applies `.env` via `--update-env` without copying the rest of the shell, and runs `pm2 save`. Nginx for `mcp.zyf.ai` is left alone. Host Node / PM2 upgrade: [`docs/host-node-upgrade-runbook.md`](docs/host-node-upgrade-runbook.md).
 
 ## Repository map
 
