@@ -47,6 +47,26 @@ describe("authorizeMcpToolCall", () => {
     expect(protectedResourceScopes(true)).not.toContain("mcp:tools:write");
   });
 
+  it("requires configure scope for manual allocation", () => {
+    for (const toolName of [
+      "set_manual_allocation",
+      "resume_opportunity_rebalance",
+    ]) {
+      expect(
+        authorizeMcpToolCall(toolName, { scope: "mcp:tools:read" }),
+      ).toMatchObject({
+        ok: false,
+        status: 403,
+        message: "Missing scope mcp:tools:write:configure",
+      });
+      expect(
+        authorizeMcpToolCall(toolName, {
+          scope: "mcp:tools:read mcp:tools:write:configure",
+        }),
+      ).toEqual({ ok: true });
+    }
+  });
+
   it("requires configure scope for set_strategy", () => {
     expect(
       authorizeMcpToolCall("set_strategy", { scope: "mcp:tools:read" }),

@@ -51,7 +51,12 @@ export function requiredScopeForTool(toolName: string): string | undefined {
   ) {
     return "mcp:tools:write:deposit";
   }
-  if (toolName === "update_settings" || toolName === "set_strategy") {
+  if (
+    toolName === "update_settings" ||
+    toolName === "set_strategy" ||
+    toolName === "set_manual_allocation" ||
+    toolName === "resume_opportunity_rebalance"
+  ) {
     return "mcp:tools:write:configure";
   }
   if (toolName === "withdraw") {

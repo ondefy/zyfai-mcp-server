@@ -10,6 +10,23 @@ import {
   type SDKConfig,
   type SupportedChainId,
 } from "@zyfai/sdk";
+
+declare module "@zyfai/sdk" {
+  interface ZyfaiSDK {
+    setManualAllocation(request: {
+      assetType: string;
+      targets: {
+        chainId: number;
+        protocolId: string;
+        pool: string;
+        weightBps: number;
+      }[];
+    }): Promise<{ success: true }>;
+    resumeOpportunityRebalance(request: {
+      assetType: string;
+    }): Promise<{ success: true }>;
+  }
+}
 import type {
   CustomizationConfig,
   SimulateBestPositionsParams,
@@ -280,6 +297,24 @@ export class ZyfaiApiService {
   async getAssetTypeSettings() {
     const sdk = await this.sdkForUserScoped();
     return sdk.getAssetTypeSettings();
+  }
+
+  async setManualAllocation(request: {
+    assetType: string;
+    targets: {
+      chainId: number;
+      protocolId: string;
+      pool: string;
+      weightBps: number;
+    }[];
+  }) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.setManualAllocation(request);
+  }
+
+  async resumeOpportunityRebalance(assetType: string) {
+    const sdk = await this.sdkForUserScoped();
+    return sdk.resumeOpportunityRebalance({ assetType });
   }
 
   async getAgentDepositIntentStatus(actionId: string) {
