@@ -135,7 +135,7 @@ export function registerAgentTools(
     "Discover yield opportunities Zyfai currently tracks. Informational only. Funding uses prepare_deposit. Pass spendToken when the wallet holds a different token. Allocation follows the user's Zyfai settings.",
     {
       strategy: z
-        .enum(["conservative", "aggressive"])
+        .enum(["conservative", "balance"])
         .default("conservative"),
       chainId: executionChainIdSchema.optional(),
     },
@@ -165,7 +165,7 @@ export function registerAgentTools(
     READ_TOOL_ANNOTATIONS,
     async ({ chainId }) => {
       try {
-        const [conservative, aggressive] = await Promise.all([
+        const [conservative, balance] = await Promise.all([
           zyfiApi.getConservativeOpportunities(chainId),
           zyfiApi.getAggressiveOpportunities(chainId),
         ]);
@@ -176,7 +176,7 @@ export function registerAgentTools(
               conservative,
               "conservative",
             ),
-            aggressive: enrichOpportunitiesPayload(aggressive, "aggressive"),
+            balance: enrichOpportunitiesPayload(balance, "balance"),
           },
           "Strategy comparison",
         );
@@ -198,7 +198,7 @@ export function registerAgentTools(
         executionChainIdSchema,
         z.array(executionChainIdSchema),
       ]),
-      strategy: z.enum(["conservative", "aggressive", "yieldmaxxing"]),
+      strategy: z.enum(["conservative", "balance", "grow"]),
       minSplit: z.number().optional(),
     },
     READ_TOOL_ANNOTATIONS,

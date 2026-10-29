@@ -30,7 +30,7 @@ import {
 import { toolError, toolJsonContent } from "./tool-response.js";
 
 const depositAssetSchema = z.enum(["USDC", "WETH", "EURC", "NVDAc"]);
-const strategySchema = z.enum(["conservative", "aggressive", "yieldmaxxing"]);
+const strategySchema = z.enum(["conservative", "balance", "grow"]);
 
 const withdrawToolSchema = {
   chainId: executionChainIdSchema,
@@ -267,7 +267,7 @@ export function registerAgentWriteTools(
 
   server.tool(
     "set_strategy",
-    "Change the user's yield strategy (conservative, aggressive, or yieldmaxxing) and auto-select protocols for that tier. Omit asset to apply to all SDK-managed assets. Do not pass protocol IDs.",
+    "Change the user's yield strategy (conservative, balance, or grow) and auto-select protocols for that tier. Omit asset to apply to all SDK-managed assets. Do not pass protocol IDs.",
     setStrategySchema,
     WRITE_DESTRUCTIVE_ANNOTATIONS,
     async ({ strategy, asset, chains }) => {
