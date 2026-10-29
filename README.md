@@ -10,7 +10,7 @@ You do not need to clone or run this repository to use the hosted server.
 
 ## What you can do
 
-- Discover conservative and aggressive yield opportunities
+- Discover conservative and balance yield opportunities
 - Compare APY, TVL, protocol, pool, chain, asset, and available risk information
 - Inspect an authenticated user's Zyfai portfolio and active positions
 - Review earnings, transaction history, and rebalancing information
@@ -71,7 +71,7 @@ Start with public opportunity discovery:
 
 Then compare strategies:
 
-> Now compare those with the aggressive strategy and explain the additional risk rather than recommending purely by APY.
+> Now compare those with the balance strategy and explain the additional risk rather than recommending purely by APY.
 
 After authentication:
 
