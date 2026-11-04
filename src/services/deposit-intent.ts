@@ -73,6 +73,7 @@ export function chatLabelFromClientId(clientId: string): string | undefined {
     claude: "Claude",
     grok: "Grok",
     chatgpt: "ChatGPT",
+    "zyfai-telegram": "Telegram",
   };
   return bare[clientId.trim().toLowerCase()];
 }

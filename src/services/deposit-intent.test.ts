@@ -31,6 +31,7 @@ describe("deposit-intent API bridge", () => {
     expect(chatLabelFromClientId("https://cursor.com/oauth/client.json")).toBe(
       "Cursor",
     );
+    expect(chatLabelFromClientId("zyfai-telegram")).toBe("Telegram");
     expect(chatLabelFromClientId("dyn_unknown")).toBeUndefined();
   });
 
