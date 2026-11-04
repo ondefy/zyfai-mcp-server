@@ -14,6 +14,10 @@ import {
   optionalChainIdSchema,
   CHAIN_ID_DESCRIPTION,
 } from "../config/chains.js";
+import {
+  publicStrategySchema,
+  PUBLIC_STRATEGY_DESCRIPTION,
+} from "../config/strategies.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import { waitForDepositHandover } from "../services/wait-for-deposit-handover.js";
 import { buildOpportunityId } from "./opportunity-id.js";
@@ -135,8 +139,11 @@ export function registerAgentTools(
     "Discover yield opportunities Zyfai currently tracks. Informational only. Funding uses prepare_deposit. Pass spendToken when the wallet holds a different token. Allocation follows the user's Zyfai settings.",
     {
       strategy: z
-        .enum(["conservative", "aggressive"])
-        .default("conservative"),
+        .enum(["conservative", "balance"])
+        .default("conservative")
+        .describe(
+          `Instant-liquidity tier: conservative or balance (${PUBLIC_STRATEGY_DESCRIPTION}).`,
+        ),
       chainId: executionChainIdSchema.optional(),
     },
     READ_TOOL_ANNOTATIONS,
@@ -165,7 +172,7 @@ export function registerAgentTools(
     READ_TOOL_ANNOTATIONS,
     async ({ chainId }) => {
       try {
-        const [conservative, aggressive] = await Promise.all([
+        const [conservative, balance] = await Promise.all([
           zyfiApi.getConservativeOpportunities(chainId),
           zyfiApi.getAggressiveOpportunities(chainId),
         ]);
@@ -176,7 +183,7 @@ export function registerAgentTools(
               conservative,
               "conservative",
             ),
-            aggressive: enrichOpportunitiesPayload(aggressive, "aggressive"),
+            balance: enrichOpportunitiesPayload(balance, "balance"),
           },
           "Strategy comparison",
         );
@@ -198,7 +205,7 @@ export function registerAgentTools(
         executionChainIdSchema,
         z.array(executionChainIdSchema),
       ]),
-      strategy: z.enum(["conservative", "aggressive", "yieldmaxxing"]),
+      strategy: publicStrategySchema,
       minSplit: z.number().optional(),
     },
     READ_TOOL_ANNOTATIONS,

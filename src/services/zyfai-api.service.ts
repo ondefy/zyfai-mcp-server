@@ -68,6 +68,10 @@ export class ZyfaiApiService {
     return this.getPublicSDK().getAggressiveOpportunities(chainId);
   }
 
+  async getAsyncOpportunities(chainId?: SupportedChainId) {
+    return this.getPublicSDK().getAsyncOpportunities(chainId);
+  }
+
   // --- Authenticated reads ---
 
   async getPortfolio(userAddress: string) {
