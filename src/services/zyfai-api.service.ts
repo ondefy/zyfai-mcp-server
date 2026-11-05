@@ -61,11 +61,19 @@ export class ZyfaiApiService {
   }
 
   async getConservativeOpportunities(chainId?: SupportedChainId) {
-    return this.getPublicSDK().getConservativeOpportunities(chainId);
+    return this.getPublicSDK().getConservativeOpportunities(
+      chainId,
+      undefined,
+      "live",
+    );
   }
 
   async getAggressiveOpportunities(chainId?: SupportedChainId) {
-    return this.getPublicSDK().getAggressiveOpportunities(chainId);
+    return this.getPublicSDK().getAggressiveOpportunities(
+      chainId,
+      undefined,
+      "live",
+    );
   }
 
   // --- Authenticated reads ---
