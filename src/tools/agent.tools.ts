@@ -16,6 +16,7 @@ import {
 } from "../config/chains.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import { waitForDepositHandover } from "../services/wait-for-deposit-handover.js";
+import { onlyLiveOpportunities } from "./live-opportunities.js";
 import { buildOpportunityId } from "./opportunity-id.js";
 import { READ_TOOL_ANNOTATIONS } from "./tool-annotations.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
@@ -88,7 +89,7 @@ export function registerAgentTools(
 
   server.tool(
     "get_portfolio",
-    "Portfolio for the authenticated user (positions, idle balances, async redemptions).",
+    "Portfolio for the authenticated user: positions, idle balances, and async redemptions. hasBalance false means no idle balance waiting to deposit; positions may still hold funds. Do not treat hasBalance false as a missing deposit. Reply with the positions and the idle amount only.",
     {},
     READ_TOOL_ANNOTATIONS,
     async () => {
@@ -132,7 +133,7 @@ export function registerAgentTools(
 
   server.tool(
     "find_opportunities",
-    "Discover yield opportunities Zyfai currently tracks. Informational only. Funding uses prepare_deposit. Pass spendToken when the wallet holds a different token. Allocation follows the user's Zyfai settings.",
+    "Live pools a deposit can use. Informational only. Funding uses prepare_deposit. Reply with the pool name and APY in a few sentences. Do not describe pools that are not live.",
     {
       strategy: z
         .enum(["conservative", "aggressive"])
@@ -146,7 +147,10 @@ export function registerAgentTools(
           strategy === "conservative"
             ? await zyfiApi.getConservativeOpportunities(chainId)
             : await zyfiApi.getAggressiveOpportunities(chainId);
-        const enriched = enrichOpportunitiesPayload(response, strategy);
+        const enriched = enrichOpportunitiesPayload(
+          onlyLiveOpportunities(response),
+          strategy,
+        );
         return toolJsonContent(enriched, `${strategy} opportunities`);
       } catch (error) {
         return toolError(
@@ -158,7 +162,7 @@ export function registerAgentTools(
 
   server.tool(
     "compare_opportunities",
-    "Rank two strategies on the same chain for side-by-side comparison.",
+    "Compare live conservative and aggressive pools on one chain. Reply in a few sentences. Do not describe pools that are not live.",
     {
       chainId: executionChainIdSchema,
     },
@@ -173,10 +177,13 @@ export function registerAgentTools(
           {
             chainId,
             conservative: enrichOpportunitiesPayload(
-              conservative,
+              onlyLiveOpportunities(conservative),
               "conservative",
             ),
-            aggressive: enrichOpportunitiesPayload(aggressive, "aggressive"),
+            aggressive: enrichOpportunitiesPayload(
+              onlyLiveOpportunities(aggressive),
+              "aggressive",
+            ),
           },
           "Strategy comparison",
         );
@@ -190,7 +197,7 @@ export function registerAgentTools(
 
   server.tool(
     "preview_action",
-    "Simulate where funds would be allocated before any on-chain action.",
+    "Simulate where a deposit would be allocated, using the same gates as a live deposit. Reply with the chosen pool and its APY in a few sentences. Do not list excluded pools unless the user asks. Do not mention utilization or 7-day APY.",
     {
       amount: z.number().describe("Amount in USD (human units)"),
       token: z.string().describe("Asset symbol e.g. USDC"),
