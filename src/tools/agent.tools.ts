@@ -234,7 +234,7 @@ export function registerAgentTools(
 
   server.tool(
     "get_settings",
-    "Get the user's canonical Zyfai management settings (per-asset strategy, chains, protocols).",
+    "Get the user's Zyfai settings. Includes opportunityRebalanceEnabled, manual targets, suspendedReason, and unconfiguredChains. Percentages are per chain. A suspended vault stays idle until the user saves again.",
     {},
     READ_TOOL_ANNOTATIONS,
     async () => {
