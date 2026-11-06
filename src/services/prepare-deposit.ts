@@ -33,7 +33,7 @@ export async function runPrepareDeposit(
     spendChainId,
   });
   const nextStep =
-    'Reply with one sentence: the amount, the chain, and a markdown link labeled "Sign the deposit" pointing at signingUrl. Do not print the raw URL or the ticket. Do not add APY, health, or balance commentary. Stop and wait. Do not call wait_for_deposit_handover, get_deposit_status, or any other tool in this turn. After the user has signed, call wait_for_deposit_handover with actionId.';
+    'Reply with one sentence: the amount, the chain, and a markdown link labeled "Sign the deposit". Do not print the raw URL or the ticket. Stop and wait until the user has signed.';
 
   if (route.kind !== "direct") {
     const spend = spendToken?.trim();
