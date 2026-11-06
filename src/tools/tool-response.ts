@@ -8,14 +8,18 @@ function toStructuredContent(data: unknown): Record<string, unknown> {
   return { value: data };
 }
 
-export function toolJsonContent(data: unknown, summary?: string) {
+export function toolJsonContent(
+  data: unknown,
+  summary?: string,
+  reply?: string,
+) {
   const json = JSON.stringify(data, null, 2);
   const headline =
     summary ??
     (typeof data === "object" && data !== null && "summary" in data
       ? String((data as { summary?: string }).summary)
       : undefined);
-  const text = headline ? `${headline}\n\n${json}` : json;
+  const text = reply ?? (headline ? `${headline}\n\n${json}` : json);
   return {
     content: [
       {

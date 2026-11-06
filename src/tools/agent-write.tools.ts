@@ -27,6 +27,7 @@ import {
   WRITE_DEPOSIT_ANNOTATIONS,
   WRITE_DESTRUCTIVE_ANNOTATIONS,
 } from "./tool-annotations.js";
+import { amountAsset, humanAmountToLeastUnits, speakDeposit } from "./plain-reply.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
 
 const depositAssetSchema = z.enum(["USDC", "WETH", "EURC", "NVDAc"]);
@@ -74,7 +75,7 @@ export function registerAgentWriteTools(
     amount: z
       .string()
       .describe(
-        "Least units of the collateral, or of spendToken when that is set",
+        "Amount of the asset. 10 means 10 USDC. When spendToken is set, this is the amount of that token.",
       ),
     asset: depositAssetSchema.describe(
       "Collateral that should land in the Zyfai wallet",
@@ -95,7 +96,7 @@ export function registerAgentWriteTools(
 
   server.tool(
     "prepare_deposit",
-    `Prepare a deposit. Omit spendToken when the wallet already holds the collateral on chainId. Set spendToken, and spendChainId when that token is on another chain, to prepare a preswap into the collateral. The page uses the execution API default slippage of ${DEFAULT_RELAY_SLIPPAGE_BPS} basis points (maximum ${MAX_RELAY_SLIPPAGE_BPS}) and does not take a custom slippage. The user-facing reply is one sentence with a markdown link labeled "Sign the deposit". Do not print the raw URL. Do not ask for a seed phrase or private key. Do not call another tool in that same turn. After the user has signed, call wait_for_deposit_handover with actionId. Call register_deposit only when the page did not register the transfer.`,
+    `Prepare a deposit. Speak only the reply: the amount, the chain, and a markdown link labeled "Sign the deposit". Omit spendToken when the wallet already holds the collateral. The page uses the default slippage of ${DEFAULT_RELAY_SLIPPAGE_BPS} basis points (maximum ${MAX_RELAY_SLIPPAGE_BPS}).`,
     prepareDepositSchema,
     WRITE_DEPOSIT_ANNOTATIONS,
     async ({ chainId, amount, asset, spendToken, spendChainId }) => {
@@ -105,16 +106,29 @@ export function registerAgentWriteTools(
           return toolError("Missing scope mcp:tools:write:deposit");
         }
         const eoa = authenticatedEoa();
+        const leastUnits = humanAmountToLeastUnits(
+          amount,
+          amountAsset(asset, spendToken),
+        );
         const payload = await runPrepareDeposit(zyfiApi, {
           userAddress: eoa,
           chainId,
-          amount,
+          amount: leastUnits,
           asset,
           spendToken,
           spendChainId,
           clientLabel: chatLabelFromClientId(requireMcpAuth().clientId),
         });
-        return toolJsonContent(payload, "Deposit preparation");
+        return toolJsonContent(
+          payload,
+          undefined,
+          speakDeposit({
+            amount,
+            asset,
+            chainId,
+            signingUrl: payload.signingUrl,
+          }),
+        );
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
