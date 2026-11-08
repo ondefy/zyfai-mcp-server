@@ -1,0 +1,14 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "zyfai",
+  "version": "0.1.0",
+  "description": "Discover DeFi yield opportunities and inspect your Zyfai portfolio through the hosted Zyfai MCP server.",
+  "author": {
+    "name": "Zyfai",
+    "url": "https://zyf.ai"
+  },
+  "homepage": "https://zyf.ai",
+  "repository": "https://github.com/ondefy/zyfai-mcp-server",
+  "license": "ISC",
+  "keywords": ["zyfai"]
+}
