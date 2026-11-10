@@ -206,7 +206,7 @@ export function registerAgentTools(
             amount,
             token: asset,
             networks: chainId,
-            strategy: "aggressive",
+            strategy: "balanced",
           }),
         ]);
         return toolJsonContent(
