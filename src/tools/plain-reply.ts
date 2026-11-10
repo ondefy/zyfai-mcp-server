@@ -4,6 +4,10 @@
  */
 
 import { formatUnits, parseUnits } from "viem";
+import {
+  internalStrategyToPublicTier,
+  type PublicStrategyTier,
+} from "../config/strategies.js";
 
 const CHAIN_NAMES: Record<number, string> = {
   1: "Ethereum",
@@ -19,7 +23,7 @@ const ASSET_DECIMALS: Record<string, number> = {
   NVDAc: 8,
 };
 
-export type SpokenStrategy = "conservative" | "aggressive" | "yieldmaxxing";
+export type SpokenStrategy = PublicStrategyTier;
 
 export function chainName(chainId: number): string {
   return CHAIN_NAMES[chainId] ?? `chain ${chainId}`;
@@ -111,8 +115,8 @@ export function speakSimulation(
   return `${trimAmount(amount)} ${asset}${chain} would go to ${joined}.`;
 }
 
-export function speakCompare(conservative: string, aggressive: string): string {
-  return `Conservative: ${conservative} Aggressive: ${aggressive}`;
+export function speakCompare(conservative: string, balanced: string): string {
+  return `Conservative: ${conservative} Balanced: ${balanced}`;
 }
 
 interface PortfolioPosition {
@@ -222,15 +226,6 @@ export function speakDepositLanded(response: unknown): string {
   return spoken;
 }
 
-const PUBLIC_STRATEGY: Record<string, SpokenStrategy> = {
-  conservative: "conservative",
-  safe: "conservative",
-  aggressive: "aggressive",
-  degen: "aggressive",
-  yieldmaxxing: "yieldmaxxing",
-  async: "yieldmaxxing",
-};
-
 export function strategyFromSettings(
   settings: unknown,
 ): SpokenStrategy | undefined {
@@ -257,6 +252,6 @@ export function strategyFromSettings(
     usdc?: { rebalanceStrategy?: string; strategy?: string };
   };
   const usdc = record.USDC ?? record.usdc;
-  const raw = String(usdc?.rebalanceStrategy ?? usdc?.strategy ?? "").toLowerCase();
-  return PUBLIC_STRATEGY[raw];
+  const raw = String(usdc?.rebalanceStrategy ?? usdc?.strategy ?? "");
+  return internalStrategyToPublicTier(raw);
 }

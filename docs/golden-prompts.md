@@ -9,7 +9,7 @@ Release checklist: [`cursor-release-gate.md`](cursor-release-gate.md).
 1. **Direct:** "Show my Zyfai portfolio on Base."
 2. **Follow-up:** "Which position has the highest APY?"
 3. **Discovery:** "Find conservative USDC opportunities on Base."
-4. **Compare:** "Compare conservative vs aggressive opportunities on Arbitrum."
+4. **Compare:** "Compare conservative vs balanced opportunities on Arbitrum."
 5. **Settings:** "What are my current Zyfai management settings?"
 
 ## Preview

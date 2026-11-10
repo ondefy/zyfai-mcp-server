@@ -14,9 +14,13 @@ import {
   optionalChainIdSchema,
   CHAIN_ID_DESCRIPTION,
 } from "../config/chains.js";
+import {
+  publicStrategySchema,
+  publicTierToSdk,
+  type PublicStrategyTier,
+} from "../config/strategies.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import { waitForDepositHandover } from "../services/wait-for-deposit-handover.js";
-import type { Strategy } from "@zyfai/sdk";
 import {
   portfolioBody,
   speakAccount,
@@ -25,7 +29,6 @@ import {
   speakPortfolio,
   speakSimulation,
   strategyFromSettings,
-  type SpokenStrategy,
 } from "./plain-reply.js";
 import { READ_TOOL_ANNOTATIONS } from "./tool-annotations.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
@@ -42,7 +45,11 @@ function requireReadScope(): void {
 
 const ASK_AMOUNT = "How much, and on which chain?";
 
-async function savedStrategy(zyfiApi: ZyfaiApiService): Promise<SpokenStrategy> {
+const findStrategySchema = z.enum(["conservative", "balanced"]);
+
+async function savedStrategy(
+  zyfiApi: ZyfaiApiService,
+): Promise<PublicStrategyTier> {
   try {
     return strategyFromSettings(await zyfiApi.getAssetTypeSettings()) ?? "conservative";
   } catch {
@@ -135,7 +142,7 @@ export function registerAgentTools(
         .optional()
         .describe("Amount in the asset. 10 means 10 USDC"),
       token: z.string().optional().describe("Asset symbol, default USDC"),
-      strategy: z.enum(["conservative", "aggressive"]).optional(),
+      strategy: findStrategySchema.optional(),
       chainId: executionChainIdSchema.optional(),
     },
     READ_TOOL_ANNOTATIONS,
@@ -152,7 +159,7 @@ export function registerAgentTools(
           amount,
           token: asset,
           networks: chainId,
-          strategy: chosen,
+          strategy: publicTierToSdk(chosen),
         });
         return toolJsonContent(
           { positions: response.data },
@@ -188,7 +195,7 @@ export function registerAgentTools(
         requireAuthForTool();
         requireReadScope();
         const asset = token ?? "USDC";
-        const [conservative, aggressive] = await Promise.all([
+        const [conservative, balanced] = await Promise.all([
           zyfiApi.simulateBestPositions({
             amount,
             token: asset,
@@ -199,18 +206,18 @@ export function registerAgentTools(
             amount,
             token: asset,
             networks: chainId,
-            strategy: "aggressive",
+            strategy: publicTierToSdk("balanced"),
           }),
         ]);
         return toolJsonContent(
           {
             conservative: conservative.data,
-            aggressive: aggressive.data,
+            balanced: balanced.data,
           },
           undefined,
           speakCompare(
             speakSimulation(conservative, amount, asset),
-            speakSimulation(aggressive, amount, asset),
+            speakSimulation(balanced, amount, asset),
           ),
         );
       } catch (error) {
@@ -231,7 +238,7 @@ export function registerAgentTools(
         executionChainIdSchema,
         z.array(executionChainIdSchema),
       ]),
-      strategy: z.enum(["conservative", "aggressive", "yieldmaxxing"]).optional(),
+      strategy: publicStrategySchema.optional(),
       minSplit: z.number().optional(),
     },
     READ_TOOL_ANNOTATIONS,
@@ -239,12 +246,12 @@ export function registerAgentTools(
       try {
         requireAuthForTool();
         requireReadScope();
-        const chosen: Strategy = strategy ?? (await savedStrategy(zyfiApi));
+        const chosen = strategy ?? (await savedStrategy(zyfiApi));
         const response = await zyfiApi.simulateBestPositions({
           amount,
           token,
           networks,
-          strategy: chosen,
+          strategy: publicTierToSdk(chosen),
           minSplit,
         });
         return toolJsonContent(

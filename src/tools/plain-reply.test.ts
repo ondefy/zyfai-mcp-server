@@ -46,7 +46,7 @@ describe("speakCompare", () => {
       "10 USDC on Base would go to Compound V3 USDC at 5.1%.",
     );
     expect(reply).toBe(
-      "Conservative: 10 USDC on Base would go to USDC/SOL at 6.72%. Aggressive: 10 USDC on Base would go to Compound V3 USDC at 5.1%.",
+      "Conservative: 10 USDC on Base would go to USDC/SOL at 6.72%. Balanced: 10 USDC on Base would go to Compound V3 USDC at 5.1%.",
     );
   });
 });
@@ -104,7 +104,7 @@ describe("strategyFromSettings", () => {
       strategyFromSettings({
         assetTypeSettings: { USDC: { rebalanceStrategy: "degen" } },
       }),
-    ).toBe("aggressive");
+    ).toBe("balanced");
     expect(strategyFromSettings({})).toBeUndefined();
   });
 });

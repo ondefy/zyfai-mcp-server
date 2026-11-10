@@ -12,6 +12,10 @@ import {
 } from "../auth/user-scope.js";
 import { executionChainIdSchema } from "../config/chains.js";
 import {
+  publicStrategySchema,
+  publicTierToSdk,
+} from "../config/strategies.js";
+import {
   chatLabelFromClientId,
   consumeDepositIntent,
   depositIntentRegistrationMismatch,
@@ -31,7 +35,7 @@ import { amountAsset, humanAmountToLeastUnits, speakDeposit } from "./plain-repl
 import { toolError, toolJsonContent } from "./tool-response.js";
 
 const depositAssetSchema = z.enum(["USDC", "WETH", "EURC", "NVDAc"]);
-const strategySchema = z.enum(["conservative", "aggressive", "yieldmaxxing"]);
+const strategySchema = publicStrategySchema;
 
 const withdrawToolSchema = {
   chainId: executionChainIdSchema,
@@ -274,14 +278,18 @@ export function registerAgentWriteTools(
     if (!scopeIncludes("mcp:tools:write:configure")) {
       return toolError("Missing scope mcp:tools:write:configure");
     }
-    await applyStrategyWithProtocols(zyfiApi, { strategy, asset, chains });
+    await applyStrategyWithProtocols(zyfiApi, {
+      strategy: publicTierToSdk(strategy),
+      asset,
+      chains,
+    });
     const settings = await zyfiApi.getAssetTypeSettings();
     return toolJsonContent(settings, "Strategy updated with matching protocols");
   }
 
   server.tool(
     "set_strategy",
-    "Change the user's yield strategy (conservative, aggressive, or yieldmaxxing) and auto-select protocols for that tier. Omit asset to apply to all SDK-managed assets. Do not pass protocol IDs.",
+    "Change the user's yield strategy (conservative, balanced, or advanced) and auto-select protocols for that tier. Omit asset to apply to all SDK-managed assets. Do not pass protocol IDs.",
     setStrategySchema,
     WRITE_DESTRUCTIVE_ANNOTATIONS,
     async ({ strategy, asset, chains }) => {
@@ -317,7 +325,7 @@ export function registerAgentWriteTools(
 
         if (strategy !== undefined) {
           await applyStrategyWithProtocols(zyfiApi, {
-            strategy,
+            strategy: publicTierToSdk(strategy),
             asset,
             chains,
           });
