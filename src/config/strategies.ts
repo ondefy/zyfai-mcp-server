@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Strategy } from "@zyfai/sdk";
 
-/** Public strategy tiers exposed on MCP tool schemas (matches docs.zyf.ai and `@zyfai/sdk`). */
+/** Public strategy tiers exposed on MCP tool schemas (matches docs.zyf.ai). */
 export const publicStrategySchema = z.enum([
   "conservative",
   "balanced",
@@ -10,8 +10,16 @@ export const publicStrategySchema = z.enum([
 
 export type PublicStrategyTier = z.infer<typeof publicStrategySchema>;
 
+/** Maps MCP tier names to `@zyfai/sdk` `Strategy` (1.1.0 still uses execution aliases). */
 export function publicTierToSdk(tier: PublicStrategyTier): Strategy {
-  return tier;
+  switch (tier) {
+    case "conservative":
+      return "conservative";
+    case "balanced":
+      return "aggressive";
+    case "advanced":
+      return "yieldmaxxing";
+  }
 }
 
 const INTERNAL_TO_PUBLIC: Record<string, PublicStrategyTier> = {

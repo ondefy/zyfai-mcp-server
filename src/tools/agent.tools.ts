@@ -206,7 +206,7 @@ export function registerAgentTools(
             amount,
             token: asset,
             networks: chainId,
-            strategy: "balanced",
+            strategy: publicTierToSdk("balanced"),
           }),
         ]);
         return toolJsonContent(
