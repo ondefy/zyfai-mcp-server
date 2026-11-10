@@ -1,5 +1,6 @@
 import type { Strategy, SupportedAsset, SupportedChainId } from "@zyfai/sdk";
 import type { ZyfaiApiService } from "./zyfai-api.service.js";
+import type { PublicStrategyTier } from "../config/strategies.js";
 
 export type ApplyStrategyParams = {
   strategy: Strategy;
@@ -8,7 +9,7 @@ export type ApplyStrategyParams = {
 };
 
 export function assertNoStrategyWithExplicitProtocols(
-  strategy: Strategy | undefined,
+  strategy: Strategy | PublicStrategyTier | undefined,
   protocols: string[] | undefined,
 ): void {
   if (strategy !== undefined && protocols !== undefined) {

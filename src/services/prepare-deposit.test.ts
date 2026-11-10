@@ -46,6 +46,8 @@ describe("runPrepareDeposit", () => {
     expect(result.actionId).toBe("act-1");
     expect(result).not.toHaveProperty("preswap");
     expect(result.signingUrl).not.toContain("spendToken=");
+    expect(result.nextStep).toContain("Sign the deposit");
+    expect(result.nextStep).toContain("Do not print the raw URL");
   });
 
   it("puts a non-collateral spend on the signing link and does not build a transfer", async () => {

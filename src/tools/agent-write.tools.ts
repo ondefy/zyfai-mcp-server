@@ -12,6 +12,10 @@ import {
 } from "../auth/user-scope.js";
 import { executionChainIdSchema } from "../config/chains.js";
 import {
+  publicStrategySchema,
+  publicTierToSdk,
+} from "../config/strategies.js";
+import {
   chatLabelFromClientId,
   consumeDepositIntent,
   depositIntentRegistrationMismatch,
@@ -27,10 +31,11 @@ import {
   WRITE_DEPOSIT_ANNOTATIONS,
   WRITE_DESTRUCTIVE_ANNOTATIONS,
 } from "./tool-annotations.js";
+import { amountAsset, humanAmountToLeastUnits, speakDeposit } from "./plain-reply.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
 
 const depositAssetSchema = z.enum(["USDC", "WETH", "EURC", "NVDAc"]);
-const strategySchema = z.enum(["conservative", "balance", "grow"]);
+const strategySchema = publicStrategySchema;
 
 const withdrawToolSchema = {
   chainId: executionChainIdSchema,
@@ -74,7 +79,7 @@ export function registerAgentWriteTools(
     amount: z
       .string()
       .describe(
-        "Least units of the collateral, or of spendToken when that is set",
+        "Amount of the asset. 10 means 10 USDC. When spendToken is set, this is the amount of that token.",
       ),
     asset: depositAssetSchema.describe(
       "Collateral that should land in the Zyfai wallet",
@@ -95,7 +100,7 @@ export function registerAgentWriteTools(
 
   server.tool(
     "prepare_deposit",
-    `Prepare a deposit and return signingUrl. The user opens that link and signs on the Zyfai deposit page. Omit spendToken when the wallet already holds the collateral on chainId: the page transfers it. Set spendToken, and spendChainId when that token is on another chain, to prepare a preswap into the collateral. The page performs the preswap at the execution API default slippage of ${DEFAULT_RELAY_SLIPPAGE_BPS} basis points (maximum ${MAX_RELAY_SLIPPAGE_BPS}). The page does not take a custom slippage. Show signingUrl and ask the user to open it in their browser. Do not call another tool in that same turn. Do not ask for a seed phrase or private key. After they have seen the link, poll get_deposit_status or call wait_for_deposit_handover. Optionally call wait_for_deposit_position after credit when allocation matters. Call register_deposit only when the page did not register the transfer.`,
+    `Prepare a deposit. Speak only the reply: the amount, the chain, and a markdown link labeled "Sign the deposit". Omit spendToken when the wallet already holds the collateral. The page uses the default slippage of ${DEFAULT_RELAY_SLIPPAGE_BPS} basis points (maximum ${MAX_RELAY_SLIPPAGE_BPS}).`,
     prepareDepositSchema,
     WRITE_DEPOSIT_ANNOTATIONS,
     async ({ chainId, amount, asset, spendToken, spendChainId }) => {
@@ -105,16 +110,29 @@ export function registerAgentWriteTools(
           return toolError("Missing scope mcp:tools:write:deposit");
         }
         const eoa = authenticatedEoa();
+        const leastUnits = humanAmountToLeastUnits(
+          amount,
+          amountAsset(asset, spendToken),
+        );
         const payload = await runPrepareDeposit(zyfiApi, {
           userAddress: eoa,
           chainId,
-          amount,
+          amount: leastUnits,
           asset,
           spendToken,
           spendChainId,
           clientLabel: chatLabelFromClientId(requireMcpAuth().clientId),
         });
-        return toolJsonContent(payload, "Deposit preparation");
+        return toolJsonContent(
+          payload,
+          undefined,
+          speakDeposit({
+            amount,
+            asset,
+            chainId,
+            signingUrl: payload.signingUrl,
+          }),
+        );
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -260,14 +278,18 @@ export function registerAgentWriteTools(
     if (!scopeIncludes("mcp:tools:write:configure")) {
       return toolError("Missing scope mcp:tools:write:configure");
     }
-    await applyStrategyWithProtocols(zyfiApi, { strategy, asset, chains });
+    await applyStrategyWithProtocols(zyfiApi, {
+      strategy: publicTierToSdk(strategy),
+      asset,
+      chains,
+    });
     const settings = await zyfiApi.getAssetTypeSettings();
     return toolJsonContent(settings, "Strategy updated with matching protocols");
   }
 
   server.tool(
     "set_strategy",
-    "Change the user's yield strategy (conservative, balance, or grow) and auto-select protocols for that tier. Omit asset to apply to all SDK-managed assets. Do not pass protocol IDs.",
+    "Change the user's yield strategy (conservative, balanced, or advanced) and auto-select protocols for that tier. Omit asset to apply to all SDK-managed assets. Do not pass protocol IDs.",
     setStrategySchema,
     WRITE_DESTRUCTIVE_ANNOTATIONS,
     async ({ strategy, asset, chains }) => {
@@ -303,7 +325,7 @@ export function registerAgentWriteTools(
 
         if (strategy !== undefined) {
           await applyStrategyWithProtocols(zyfiApi, {
-            strategy,
+            strategy: publicTierToSdk(strategy),
             asset,
             chains,
           });

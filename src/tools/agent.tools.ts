@@ -14,9 +14,22 @@ import {
   optionalChainIdSchema,
   CHAIN_ID_DESCRIPTION,
 } from "../config/chains.js";
+import {
+  publicStrategySchema,
+  publicTierToSdk,
+  type PublicStrategyTier,
+} from "../config/strategies.js";
 import { ZyfaiApiService } from "../services/zyfai-api.service.js";
 import { waitForDepositHandover } from "../services/wait-for-deposit-handover.js";
-import { buildOpportunityId } from "./opportunity-id.js";
+import {
+  portfolioBody,
+  speakAccount,
+  speakCompare,
+  speakDepositLanded,
+  speakPortfolio,
+  speakSimulation,
+  strategyFromSettings,
+} from "./plain-reply.js";
 import { READ_TOOL_ANNOTATIONS } from "./tool-annotations.js";
 import { toolError, toolJsonContent } from "./tool-response.js";
 
@@ -30,37 +43,18 @@ function requireReadScope(): void {
   }
 }
 
-function enrichOpportunitiesPayload(
-  data: unknown,
-  strategy: string,
-): unknown {
-  if (Array.isArray(data)) {
-    return data.map((row) => {
-      const r = row as Record<string, unknown>;
-      const chainId = Number(r.chainId ?? r.chain_id ?? 0);
-      return {
-        ...r,
-        opportunityId: buildOpportunityId({
-          chainId,
-          poolId: String(r.poolId ?? r.pool_id ?? ""),
-          poolAddress: String(r.poolAddress ?? r.pool_address ?? ""),
-          protocol: String(r.protocol ?? r.protocolName ?? ""),
-          strategy,
-        }),
-      };
-    });
+const ASK_AMOUNT = "How much, and on which chain?";
+
+const findStrategySchema = z.enum(["conservative", "balanced"]);
+
+async function savedStrategy(
+  zyfiApi: ZyfaiApiService,
+): Promise<PublicStrategyTier> {
+  try {
+    return strategyFromSettings(await zyfiApi.getAssetTypeSettings()) ?? "conservative";
+  } catch {
+    return "conservative";
   }
-  if (data && typeof data === "object" && "opportunities" in data) {
-    const container = data as { opportunities: unknown[] };
-    return {
-      ...data,
-      opportunities: enrichOpportunitiesPayload(
-        container.opportunities,
-        strategy,
-      ),
-    };
-  }
-  return data;
 }
 
 export function registerAgentTools(
@@ -69,7 +63,7 @@ export function registerAgentTools(
 ) {
   server.tool(
     "get_account",
-    "Get the authenticated user's Zyfai profile (strategy, chains, smart wallet).",
+    "Say only the reply. It names the chains that can take a deposit.",
     {},
     READ_TOOL_ANNOTATIONS,
     async () => {
@@ -77,7 +71,7 @@ export function registerAgentTools(
         requireAuthForTool();
         requireReadScope();
         const response = await zyfiApi.getUserDetails("USDC");
-        return toolJsonContent(response, "Zyfai account profile");
+        return toolJsonContent(response, undefined, speakAccount(response));
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -88,7 +82,7 @@ export function registerAgentTools(
 
   server.tool(
     "get_portfolio",
-    "Portfolio for the authenticated user (positions, idle balances, async redemptions).",
+    "Say only the reply. It names positions and any idle amount.",
     {},
     READ_TOOL_ANNOTATIONS,
     async () => {
@@ -97,7 +91,11 @@ export function registerAgentTools(
         requireReadScope();
         const eoa = authenticatedEoa();
         const response = await zyfiApi.getPortfolio(eoa);
-        return toolJsonContent(response, "Portfolio summary");
+        return toolJsonContent(
+          response,
+          undefined,
+          speakPortfolio(portfolioBody(response)),
+        );
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -108,7 +106,7 @@ export function registerAgentTools(
 
   server.tool(
     "get_positions",
-    "Active DeFi positions for the authenticated user. Optional chain filter.",
+    "Say only the reply. It names each position and its rate.",
     {
       chainId: optionalChainIdSchema.describe(
         `Optional chain ID. ${CHAIN_ID_DESCRIPTION}`,
@@ -121,7 +119,11 @@ export function registerAgentTools(
         requireReadScope();
         const eoa = authenticatedEoa();
         const response = await zyfiApi.getPositions(eoa, chainId);
-        return toolJsonContent(response, "Active positions");
+        return toolJsonContent(
+          response,
+          undefined,
+          speakPortfolio(portfolioBody(response)),
+        );
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -132,22 +134,38 @@ export function registerAgentTools(
 
   server.tool(
     "find_opportunities",
-    "Discover yield opportunities Zyfai currently tracks. Informational only. Funding uses prepare_deposit. Pass spendToken when the wallet holds a different token. Allocation follows the user's Zyfai settings.",
+    "Say only the reply. It names where this amount would go, and the rate. When the amount or the chain is missing, the reply asks for both.",
     {
-      strategy: z
-        .enum(["conservative", "balance"])
-        .default("conservative"),
+      amount: z
+        .number()
+        .positive()
+        .optional()
+        .describe("Amount in the asset. 10 means 10 USDC"),
+      token: z.string().optional().describe("Asset symbol, default USDC"),
+      strategy: findStrategySchema.optional(),
       chainId: executionChainIdSchema.optional(),
     },
     READ_TOOL_ANNOTATIONS,
-    async ({ strategy, chainId }) => {
+    async ({ amount, token, strategy, chainId }) => {
       try {
-        const response =
-          strategy === "conservative"
-            ? await zyfiApi.getConservativeOpportunities(chainId)
-            : await zyfiApi.getAggressiveOpportunities(chainId);
-        const enriched = enrichOpportunitiesPayload(response, strategy);
-        return toolJsonContent(enriched, `${strategy} opportunities`);
+        if (amount === undefined || chainId === undefined) {
+          return toolJsonContent({}, undefined, ASK_AMOUNT);
+        }
+        requireAuthForTool();
+        requireReadScope();
+        const asset = token ?? "USDC";
+        const chosen = strategy ?? (await savedStrategy(zyfiApi));
+        const response = await zyfiApi.simulateBestPositions({
+          amount,
+          token: asset,
+          networks: chainId,
+          strategy: publicTierToSdk(chosen),
+        });
+        return toolJsonContent(
+          { positions: response.data },
+          undefined,
+          speakSimulation(response, amount, asset),
+        );
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",
@@ -158,27 +176,49 @@ export function registerAgentTools(
 
   server.tool(
     "compare_opportunities",
-    "Rank two strategies on the same chain for side-by-side comparison.",
+    "Say only the reply. It names the pool each strategy would use, and its rate. When the amount is missing, the reply asks for the amount and the chain.",
     {
+      amount: z
+        .number()
+        .positive()
+        .optional()
+        .describe("Amount in the asset. 10 means 10 USDC"),
+      token: z.string().optional().describe("Asset symbol, default USDC"),
       chainId: executionChainIdSchema,
     },
     READ_TOOL_ANNOTATIONS,
-    async ({ chainId }) => {
+    async ({ amount, token, chainId }) => {
       try {
-        const [conservative, balance] = await Promise.all([
-          zyfiApi.getConservativeOpportunities(chainId),
-          zyfiApi.getAggressiveOpportunities(chainId),
+        if (amount === undefined) {
+          return toolJsonContent({}, undefined, ASK_AMOUNT);
+        }
+        requireAuthForTool();
+        requireReadScope();
+        const asset = token ?? "USDC";
+        const [conservative, balanced] = await Promise.all([
+          zyfiApi.simulateBestPositions({
+            amount,
+            token: asset,
+            networks: chainId,
+            strategy: "conservative",
+          }),
+          zyfiApi.simulateBestPositions({
+            amount,
+            token: asset,
+            networks: chainId,
+            strategy: "aggressive",
+          }),
         ]);
         return toolJsonContent(
           {
-            chainId,
-            conservative: enrichOpportunitiesPayload(
-              conservative,
-              "conservative",
-            ),
-            balance: enrichOpportunitiesPayload(balance, "balance"),
+            conservative: conservative.data,
+            balanced: balanced.data,
           },
-          "Strategy comparison",
+          undefined,
+          speakCompare(
+            speakSimulation(conservative, amount, asset),
+            speakSimulation(balanced, amount, asset),
+          ),
         );
       } catch (error) {
         return toolError(
@@ -190,15 +230,15 @@ export function registerAgentTools(
 
   server.tool(
     "preview_action",
-    "Simulate where funds would be allocated before any on-chain action.",
+    "Say only the reply. It names where this amount would go, and the rate.",
     {
-      amount: z.number().describe("Amount in USD (human units)"),
+      amount: z.number().describe("Amount in the asset. 10 means 10 USDC"),
       token: z.string().describe("Asset symbol e.g. USDC"),
       networks: z.union([
         executionChainIdSchema,
         z.array(executionChainIdSchema),
       ]),
-      strategy: z.enum(["conservative", "balance", "grow"]),
+      strategy: publicStrategySchema.optional(),
       minSplit: z.number().optional(),
     },
     READ_TOOL_ANNOTATIONS,
@@ -206,16 +246,18 @@ export function registerAgentTools(
       try {
         requireAuthForTool();
         requireReadScope();
+        const chosen = strategy ?? (await savedStrategy(zyfiApi));
         const response = await zyfiApi.simulateBestPositions({
           amount,
           token,
           networks,
-          strategy,
+          strategy: publicTierToSdk(chosen),
           minSplit,
         });
         return toolJsonContent(
-          { simulation: response },
-          "Allocation preview",
+          { positions: response.data },
+          undefined,
+          speakSimulation(response, amount, token),
         );
       } catch (error) {
         return toolError(
@@ -327,7 +369,7 @@ export function registerAgentTools(
 
   server.tool(
     "wait_for_deposit_position",
-    "Block until a credited deposit is allocated to a protocol position, skipped, failed, or (for cross-chain) the bridge execution tx is recorded. Call after wait_for_deposit_handover or register_deposit when waitForCredit succeeded. Destination-chain allocation is not tracked on cross-chain deposits.",
+    "Say only the reply. It names where the deposit landed, and the rate.",
     {
       depositId: z.string().describe("depositId from handover or register_deposit"),
       chainId: executionChainIdSchema,
@@ -342,7 +384,21 @@ export function registerAgentTools(
           timeoutMs,
           intervalMs,
         });
-        return toolJsonContent(status, "Deposit position outcome");
+        let reply = "The deposit is in.";
+        const landed =
+          status.status === "positioned" || status.positionOutcome === "positioned";
+        if (landed) {
+          try {
+            const positions = await zyfiApi.getPositions(
+              authenticatedEoa(),
+              chainId,
+            );
+            reply = speakDepositLanded(positions);
+          } catch {
+            reply = "The deposit is in.";
+          }
+        }
+        return toolJsonContent(status, undefined, reply);
       } catch (error) {
         return toolError(
           error instanceof Error ? error.message : "Unknown error",

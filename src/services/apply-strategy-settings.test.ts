@@ -8,7 +8,7 @@ import type { ZyfaiApiService } from "./zyfai-api.service.js";
 describe("assertNoStrategyWithExplicitProtocols", () => {
   it("throws when strategy and protocols are both set", () => {
     expect(() =>
-      assertNoStrategyWithExplicitProtocols("grow", ["aave"]),
+      assertNoStrategyWithExplicitProtocols("yieldmaxxing", ["aave"]),
     ).toThrow(/Cannot set strategy and explicit protocols/);
   });
 
@@ -27,12 +27,12 @@ describe("applyStrategyWithProtocols", () => {
     } as unknown as ZyfaiApiService;
 
     await applyStrategyWithProtocols(zyfiApi, {
-      strategy: "balance",
+      strategy: "aggressive",
       asset: "USDC",
     });
 
     expect(setStrategyWithProtocols).toHaveBeenCalledWith({
-      strategy: "balance",
+      strategy: "aggressive",
       asset: "USDC",
     });
   });
@@ -43,10 +43,10 @@ describe("applyStrategyWithProtocols", () => {
       setStrategyWithProtocols,
     } as unknown as ZyfaiApiService;
 
-    await applyStrategyWithProtocols(zyfiApi, { strategy: "grow" });
+    await applyStrategyWithProtocols(zyfiApi, { strategy: "yieldmaxxing" });
 
     expect(setStrategyWithProtocols).toHaveBeenCalledWith({
-      strategy: "grow",
+      strategy: "yieldmaxxing",
     });
   });
 });

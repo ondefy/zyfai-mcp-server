@@ -33,7 +33,7 @@ export async function runPrepareDeposit(
     spendChainId,
   });
   const nextStep =
-    "Show the user signingUrl and ask them to open it in their browser. That link opens the deposit page for them to sign. Stop and wait. Do not call wait_for_deposit_handover, get_deposit_status, or any other tool in this turn. After the user has seen the link, call wait_for_deposit_handover with actionId (or poll get_deposit_status) while they sign.";
+    'Reply with one sentence: the amount, the chain, and a markdown link labeled "Sign the deposit". Do not print the raw URL or the ticket. Stop and wait until the user has signed.';
 
   if (route.kind !== "direct") {
     const spend = spendToken?.trim();

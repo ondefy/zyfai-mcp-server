@@ -10,7 +10,7 @@ You do not need to clone or run this repository to use the hosted server.
 
 ## What you can do
 
-- Discover conservative and balance yield opportunities
+- Discover conservative and balanced yield opportunities
 - Compare APY, TVL, protocol, pool, chain, asset, and available risk information
 - Inspect an authenticated user's Zyfai portfolio and active positions
 - Review earnings, transaction history, and rebalancing information
@@ -24,15 +24,27 @@ The server is built on [`@zyfai/sdk`](https://www.npmjs.com/package/@zyfai/sdk) 
 | Client | How to connect | Positioning |
 | --- | --- | --- |
 | **Claude** | Add a custom connector using the hosted endpoint | Recommended conversational experience |
-| **Cursor** | Add the JSON configuration below | Developer workflows |
+| **Cursor** | Test the local Agent Plugin or add the JSON configuration below | Developer workflows |
 | **Claude Code** | Run the command below | Terminal and coding-agent workflows |
-| **Grok and Grok Bot** | Add a Custom connector at [grok.com/connectors](https://grok.com/connectors) | Longer-running and repeat agent workflows |
+| **Grok** | Add a Custom connector at [grok.com/connectors](https://grok.com/connectors) | Conversational workflows |
+| **Grok Bot** | Ask your Bot to add the hosted MCP endpoint | Longer-running and repeat agent workflows |
 | **ChatGPT** | Limited private preview; currently desktop-only | Public distribution not yet available |
 | **Other clients** | Configure the hosted URL as a remote Streamable HTTP server | Custom agents and integrations |
 
 For current screenshots, authentication behaviour, mobile/desktop availability, and troubleshooting, see [Use Zyfai with AI](https://docs.zyf.ai/docs/sdk/mcp-server).
 
 ### Cursor
+
+To test the Agent Plugin before a marketplace listing, copy the two root manifests from a checkout of this repository:
+
+```bash
+mkdir -p ~/.cursor/plugins/local/zyfai
+cp plugin.json mcp.json ~/.cursor/plugins/local/zyfai/
+```
+
+Reload Cursor, find **Zyfai** in **Customize**, and complete Zyfai sign-in when prompted. Then follow the [read-only smoke test](#read-only-smoke-test). See [Cursor's local plugin instructions](https://cursor.com/docs/plugins#test-plugins-locally).
+
+For a manual Cursor MCP connection, use:
 
 ```json
 {
@@ -57,11 +69,24 @@ claude mcp add --transport http zyfai https://mcp.zyf.ai/mcp
 
 In Claude, open **Customize → Connectors**, add a custom connector named **Zyfai**, and set the remote MCP URL to `https://mcp.zyf.ai/mcp`. Select **Continue**, then sign in. Full click-path: [Use Zyfai with AI](https://docs.zyf.ai/docs/sdk/mcp-server).
 
-### Grok and Grok Bot
+### Grok
 
-Open [grok.com/connectors](https://grok.com/connectors), select **New Connector → Custom**, and enter the hosted endpoint. In Grok Bot, attach the installed Zyfai connector with `@` when needed.
+Open [grok.com/connectors](https://grok.com/connectors), select **New Connector → Custom**, and enter the hosted endpoint. Complete Zyfai sign-in when prompted.
 
-Grok Bot is the better fit for longer-running or repeat workflows. Grok web also supports the connector for ad hoc conversations, although tool-heavy requests can take longer to complete.
+### Grok Bot
+
+Ask your Bot to add the custom MCP connection:
+
+> Add this MCP server: https://mcp.zyf.ai/mcp
+
+Confirm the connection in Bot chat, complete Zyfai sign-in, and verify that the tools are available in the next message. See [Grok Bot's app connection guide](https://docs.x.ai/grok-bot/computer-and-apps).
+
+### Read-only smoke test
+
+After sign-in, run these prompts with a Zyfai account that has no funds:
+
+1. **Using Zyfai, show conservative USDC yield opportunities on Base.** Expect opportunity data from Zyfai.
+2. **Using Zyfai, show my current positions.** Expect an empty result for an account with no positions.
 
 ## Try it
 
@@ -71,7 +96,7 @@ Start with public opportunity discovery:
 
 Then compare strategies:
 
-> Now compare those with the balance strategy and explain the additional risk rather than recommending purely by APY.
+> Now compare those with the balanced strategy and explain the additional risk rather than recommending purely by APY.
 
 After authentication:
 
