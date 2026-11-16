@@ -32,6 +32,7 @@ describe("deposit-intent API bridge", () => {
       "Cursor",
     );
     expect(chatLabelFromClientId("dyn_unknown")).toBeUndefined();
+    expect(chatLabelFromClientId("zyfai-in-app")).toBe("Ask Zyfai");
   });
 
   it("creates via execution API", async () => {

@@ -69,6 +69,7 @@ export function chatLabelFromClientId(clientId: string): string | undefined {
     if (match) return match.label;
   }
   const bare: Record<string, string> = {
+    "zyfai-in-app": "Ask Zyfai",
     cursor: "Cursor",
     claude: "Claude",
     grok: "Grok",
