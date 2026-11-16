@@ -106,8 +106,11 @@ export function registerAgentWriteTools(
     async ({ chainId, amount, asset, spendToken, spendChainId }) => {
       try {
         requireAuthForTool();
-        if (!scopeIncludes("mcp:tools:write:deposit")) {
-          return toolError("Missing scope mcp:tools:write:deposit");
+        if (
+          !scopeIncludes("mcp:tools:write:prepare-deposit") &&
+          !scopeIncludes("mcp:tools:write:deposit")
+        ) {
+          return toolError("Missing scope mcp:tools:write:prepare-deposit");
         }
         const eoa = authenticatedEoa();
         const leastUnits = humanAmountToLeastUnits(

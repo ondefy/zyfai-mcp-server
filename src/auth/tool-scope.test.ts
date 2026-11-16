@@ -43,6 +43,7 @@ describe("authorizeMcpToolCall", () => {
   it("advertises write scopes only when write tools are enabled", () => {
     expect(protectedResourceScopes(false)).toEqual(["mcp:tools:read"]);
     expect(protectedResourceScopes(true)).toContain("mcp:tools:write:deposit");
+    expect(protectedResourceScopes(true)).toContain("mcp:tools:write:prepare-deposit");
     expect(protectedResourceScopes(true)).toContain("mcp:tools:write:withdraw");
     expect(protectedResourceScopes(true)).not.toContain("mcp:tools:write");
   });
@@ -72,6 +73,18 @@ describe("authorizeMcpToolCall", () => {
         scope: "mcp:tools:read mcp:tools:write:deposit",
       }),
     ).toEqual({ ok: true });
+  });
+
+  it("limits the in-app preparation scope to prepare_deposit", () => {
+    const auth = { scope: "mcp:tools:read mcp:tools:write:prepare-deposit" };
+    expect(authorizeMcpToolCall("prepare_deposit", auth)).toEqual({ ok: true });
+    for (const name of ["register_deposit", "withdraw", "register_withdraw", "update_settings"]) {
+      expect(authorizeMcpToolCall(name, auth)).toMatchObject({
+        ok: false,
+        status: 403,
+        error: "insufficient_scope",
+      });
+    }
   });
 
   it("requires read scope for deposit and withdraw lifecycle tools", () => {
